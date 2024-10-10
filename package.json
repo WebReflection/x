@@ -1,0 +1,33 @@
+{
+  "name": "@webreflection/x",
+  "version": "0.0.0",
+  "type": "module",
+  "main": "x.js",
+  "module": "x.js",
+  "exports": {
+    ".": "./x.js",
+    "./custom": "./custom.js"
+  },
+  "directories": {
+    "test": "test"
+  },
+  "files": [
+    "x.js",
+    "custom.js",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "node custom.cjs",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "template",
+    "JSX",
+    "XML",
+    "HTML"
+  ],
+  "author": "Andrea Giammarchi",
+  "license": "MIT",
+  "description": "Strict XML strings translated to corresponding HTML nodes"
+}
