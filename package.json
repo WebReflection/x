@@ -6,7 +6,8 @@
   "module": "x.js",
   "exports": {
     ".": "./x.js",
-    "./custom": "./custom.js"
+    "./custom": "./custom.js",
+    "./path": "./path.js"
   },
   "directories": {
     "test": "test"
