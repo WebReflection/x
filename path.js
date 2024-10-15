@@ -69,7 +69,7 @@ export default (template, svg = false) => {
       path: nodePath(isComment ? node : node.ownerElement)
     });
     if (isComment) node.data = 'x';
-    else node.ownerElement.removeAttributeNode(node);
+    else node.ownerElement.removeAttribute(value);
     j++;
   }
   const html = adopt(xml.firstChild).outerHTML.slice(3, -4);
