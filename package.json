@@ -1,20 +1,18 @@
 {
   "name": "@webreflection/x",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "type": "module",
-  "main": "x.js",
-  "module": "x.js",
+  "main": "./src/x.js",
+  "module": "./src/x.js",
   "exports": {
-    ".": "./x.js",
-    "./custom": "./custom.js",
-    "./path": "./path.js"
-  },
-  "directories": {
-    "test": "test"
+    ".": "./src/x.js",
+    "./custom": "./src/custom.js",
+    "./path": "./src/path.js"
   },
   "files": [
-    "x.js",
-    "custom.js",
+    "./src/x.js",
+    "./src/path.js",
+    "./src/custom.js",
     "LICENSE",
     "README.md"
   ],
@@ -30,5 +28,5 @@
   ],
   "author": "Andrea Giammarchi",
   "license": "MIT",
-  "description": "Strict XML strings translated to corresponding HTML nodes"
+  "description": "XML strings translated to corresponding HTML nodes"
 }
