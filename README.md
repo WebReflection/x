@@ -56,7 +56,8 @@ const html = generic(false);
 const svg = generic(true);
 
 document.body.append(
-  html`<hello /><world />`
+  html`<hello test=${1} /><world test="${2}" />`.fragment
+  //               ^^^^               ^^^^^^    ^^^^^^^^^
 );
 ```
 
