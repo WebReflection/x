@@ -38,27 +38,4 @@ document.body.innerHTML;
 // <span test="1"></span><span></span>
 ```
 
-### x/path
-```js
-import parse from '@webreflection/x/path';
-
-const generic = svg => (template, ...values) => {
-  const [fragment, paths] = parse(template, svg);
-  for (let i = 0; i < paths.length; i++) {
-    const { type, name, path } = paths[i];
-    if (type === 2) node.setAttribute(name, values[i]);
-    else node.parentNode.insertBefore(values[i], node);
-  }
-  return fragment;
-};
-
-const html = generic(false);
-const svg = generic(true);
-
-document.body.append(
-  html`<hello test=${1} /><world test="${2}" />`.fragment
-  //               ^^^^               ^^^^^^    ^^^^^^^^^
-);
-```
-
 That's literally it 😇

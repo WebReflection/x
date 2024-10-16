@@ -1,12 +1,24 @@
 <!doctype html>
 <script type="module">
-import custom from '../src/custom.js';
-const x = custom();
+import tag from '../src/tag.js';
+import Fragment from '../src/fragment.js';
+const html = tag(false);
 
-class XFoo extends HTMLElement { connectedCallback() { console.log('live') } }
+class XFoo extends HTMLElement {
+  connectedCallback() {
+    console.log(this.localName, 'is live');
+ }
+}
 customElements.define('x-foo', XFoo);
 
-let f = x`<input /><x-foo test='${123}' />`;
-document.body.appendChild(f);
-console.log(document.body.innerHTML);
+const { type, node, paths } = html`
+        <input disabled="" />
+        <x-foo test='${123}' />
+`;
+
+console.log({ type, node, paths });
+
+globalThis.node = type === 11 ? new Fragment(node) : node;
+
+document.body.appendChild(globalThis.node);
 </script>

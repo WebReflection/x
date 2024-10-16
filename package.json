@@ -7,12 +7,12 @@
   "exports": {
     ".": "./src/x.js",
     "./custom": "./src/custom.js",
-    "./path": "./src/path.js"
+    "./path": "./src/parse.js",
+    "./tag": "./src/tag.js",
+    "./fragment": "./src/fragment.js"
   },
   "files": [
-    "./src/x.js",
-    "./src/path.js",
-    "./src/custom.js",
+    "./src/*.js",
     "LICENSE",
     "README.md"
   ],
