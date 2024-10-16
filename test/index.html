@@ -1,8 +1,6 @@
 <!doctype html>
 <script type="module">
-import tag from '../src/tag.js';
-import Fragment from '../src/fragment.js';
-const html = tag(false);
+import { html, svg, skip, update } from '../src/node.js';
 
 class XFoo extends HTMLElement {
   connectedCallback() {
@@ -11,14 +9,12 @@ class XFoo extends HTMLElement {
 }
 customElements.define('x-foo', XFoo);
 
-const { type, node, paths } = html`
-        <input disabled="" />
-        <x-foo test='${123}' />
+const fragment = html`
+        <input ?disabled=${true} />
+        <x-foo test=${123}>${'test'}</x-foo>
 `;
 
-console.log({ type, node, paths });
+document.body.appendChild(fragment);
 
-globalThis.node = type === 11 ? new Fragment(node) : node;
-
-document.body.appendChild(globalThis.node);
+setTimeout(update, 1000, fragment, [false, skip, 'ok']);
 </script>

@@ -38,4 +38,20 @@ document.body.innerHTML;
 // <span test="1"></span><span></span>
 ```
 
+### x/node
+```js
+// exports: html, svg, update, skip, x
+import { html, svg, update } from '@webreflection/x/node';
+
+const fragment = x`<span test=${1} /><span />`;
+
+document.body.appendChild(fragment);
+
+document.body.innerHTML;
+// <span test="1"></span><span></span>
+
+setTimeout(update, 1000, fragment, [2]);
+// will update test attribute as 2
+```
+
 That's literally it 😇

@@ -7,8 +7,9 @@
   "exports": {
     ".": "./src/x.js",
     "./custom": "./src/custom.js",
-    "./path": "./src/parse.js",
+    "./parse": "./src/parse.js",
     "./tag": "./src/tag.js",
+    "./node": "./src/node.js",
     "./fragment": "./src/fragment.js"
   },
   "files": [

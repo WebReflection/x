@@ -2,8 +2,8 @@ import native from './native.js';
 
 const range = document.createRange();
 
-const drop = ({ firstChild, lastChild }, preserve) => {
-  if (preserve) range.setStartAfter(firstChild);
+const drop = ({ firstChild, lastChild }, keepFirst) => {
+  if (keepFirst) range.setStartAfter(firstChild);
   else range.setStartBefore(firstChild);
   range.setEndAfter(lastChild);
   range.deleteContents();
