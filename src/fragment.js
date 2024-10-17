@@ -1,6 +1,5 @@
 import native from './native.js';
-
-const range = document.createRange();
+import { range } from './utils.js';
 
 const drop = ({ firstChild, lastChild }, keepFirst) => {
   if (keepFirst) range.setStartAfter(firstChild);

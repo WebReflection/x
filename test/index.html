@@ -1,20 +1,31 @@
-<!doctype html>
-<script type="module">
-import { html, svg, skip, update } from '../src/node.js';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script type="module">
+    import { html, svg, skip, update } from '../src/node.js';
+    
+    class XFoo extends HTMLElement {
+      connectedCallback() {
+        console.log(this.localName, 'is live');
+     }
+    }
+    customElements.define('x-foo', XFoo);
 
-class XFoo extends HTMLElement {
-  connectedCallback() {
-    console.log(this.localName, 'is live');
- }
-}
-customElements.define('x-foo', XFoo);
-
-const fragment = html`
-        <input ?disabled=${true} />
-        <x-foo test=${123}>${'test'}</x-foo>
-`;
-
-document.body.appendChild(fragment);
-
-setTimeout(update, 1000, fragment, [false, skip, 'ok']);
-</script>
+    const li = html`<li>${'👋'}</li>`;
+    const td = html`<td>Hello</td><td>World</td>`;
+    
+    const fragment = html`
+            <input ?disabled=${true} />
+            <x-foo test=${123}>${'test'}</x-foo>
+            <table>${td}</table>
+            <ul>${li}</ul>
+    `;
+    
+    document.body.appendChild(fragment);
+    
+    setTimeout(update, 1000, fragment, [false, skip, 'ok', td, li]);
+    </script>
+</head>
+</html>
