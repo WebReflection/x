@@ -1,6 +1,6 @@
 {
   "name": "@webreflection/x",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "type": "module",
   "main": "./src/x.js",
   "module": "./src/x.js",
