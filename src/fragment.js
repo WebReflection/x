@@ -30,12 +30,9 @@ export default class Fragment extends overridden(DocumentFragment) {
   /** @param {DocumentFragment} fragment */
   constructor(fragment) {
     super(fragment);
-    const firstChild = super.firstChild;
-    if (firstChild) {
-      this.#firstChild = firstChild;
-      this.#lastChild = super.lastChild;
-    }
-    else {
+    this.#firstChild = super.firstChild;
+    this.#lastChild = super.lastChild;
+    if (!this.#firstChild) {
       // only in this case create boundaries by default
       // as empty fragment should never be the norm
       // rather an edge case that has not much meaning in here
