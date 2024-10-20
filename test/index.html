@@ -3,6 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script imports="custom-function/factory">
+((m,a,p)=>{
+	for (let s of m.getAttribute('imports').split(/,\s*/))a[s]=p+s;
+	m.replaceWith(Object.assign(
+		document.createElement('script'),
+		{type:'importmap',textContent:JSON.stringify({imports:a})}
+	));
+})(document.currentScript,{},'https://esm.run/');
+</script>
+  </script>
   <script type="module">
     import { html, svg, skip, update } from '../src/node.js';
     

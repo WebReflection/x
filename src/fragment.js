@@ -1,35 +1,80 @@
-import native from './native.js';
-import { range } from './utils.js';
+import overridden from 'custom-function/factory';
 
-const drop = ({ firstChild, lastChild }, keepFirst) => {
-  if (keepFirst) range.setStartAfter(firstChild);
-  else range.setStartBefore(firstChild);
-  range.setEndAfter(lastChild);
-  range.deleteContents();
-  return firstChild;
-};
-
-export default class Fragment extends native(DocumentFragment) {
-  static diff(node, operation) {
-    return #childNodes in node ?
-      ((1 / operation) < 0 ?
-        (operation ? drop(node, true) : node.lastChild) :
-        (operation ? node.valueOf() : node.firstChild)) :
+/** @extends {DocumentFragment} for real! */
+export default class Fragment extends overridden(DocumentFragment) {
+  // static u/domdiff utility
+  static diff(node, op) {
+    return node instanceof Fragment ?
+      ((1 / op) < 0 ?
+        (op ? /* remove */ node.#remove(true) : /* after */ node.#lastChild) :
+        (op ? /* insert */ node.valueOf() : /* before */ node.#firstChild)) :
       node;
   }
-  #childNodes;
+
+  // privates
+  #firstChild;  // the virtual firstChild as reference
+  #lastChild;   // the virtual lastChild as reference
+  /**
+   * Drop known nodes from their parents and optionally keep its lastChild in there
+   * @param {boolean} keepLast
+   * @returns {ChildNode | void}
+   */
+  #remove(keepLast) {
+    let { childNodes } = this, lastChild;
+    if (keepLast) lastChild = childNodes.pop();
+    super.replaceChildren(...childNodes);
+    return lastChild;
+  }
+
+  // public utilities and accessors
+  /** @param {DocumentFragment} fragment */
   constructor(fragment) {
     super(fragment);
-    this.#childNodes = [...fragment.childNodes];
+    const firstChild = super.firstChild;
+    if (firstChild) {
+      this.#firstChild = firstChild;
+      this.#lastChild = super.lastChild;
+    }
+    else {
+      // only in this case create boundaries by default
+      // as empty fragment should never be the norm
+      // rather an edge case that has not much meaning in here
+      super.append(
+        this.#firstChild = document.createComment('<>'),
+        this.#lastChild = document.createComment('</>'),
+      );
+    }
   }
-  get firstChild() { return this.#childNodes.at(0); }
-  get lastChild() { return this.#childNodes.at(-1); }
-  get parentNode() { return this.#childNodes.at(0)?.parentNode; }
-  remove() { drop(this, false); }
-  replaceWith(node) { drop(this, true).replaceWith(node); }
+  get isConnected() {
+    const { parentNode } = this.#lastChild;
+    return !!parentNode && parentNode !== this;
+  }
+  get firstChild() { return this.#firstChild; }
+  get lastChild() { return this.#lastChild; }
+  get parentNode() { return this.#lastChild.parentNode; }
+  get childNodes() {
+    let firstChild = this.#firstChild;
+    const childNodes = [firstChild], lastChild = this.#lastChild;
+    while (firstChild != lastChild)
+      childNodes.push(firstChild = firstChild.nextSibling);
+    return childNodes;
+  }
+  remove() { this.#remove(false); }
+  /** @param {Node} node */
+  replaceWith(node) {
+    const last = this.#remove(true);
+    const child = this.#lastChild;
+    // conflict with u/domdiff remove(true)
+    if (last !== child) super.appendChild(last);
+    // let it throw if child wasn't even connected
+    child.replaceWith(node);
+  }
   valueOf() {
-    if (this.parentNode !== this)
-      this.replaceChildren(...this.#childNodes);
+    const { parentNode } = this.#lastChild;
+    // fragment is not even connected
+    if (!parentNode) super.appendChild(this.#lastChild);
+    // fragment is being moved/appended elsewhere
+    else if (parentNode !== this) super.replaceChildren(...this.childNodes);
     return this;
   }
 }

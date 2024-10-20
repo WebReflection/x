@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script
+    data-imports="custom-function/factory"
+    src="https://esm.run/data-imports"
+  ></script>
+  <script type="module">
+    import Fragment from '../src/fragment.js';
+
+    const ok = document.createTextNode('ok');
+    const source = document.createDocumentFragment();
+    source.append('fragment');
+    let f = new Fragment(document.createDocumentFragment());
+    console.log(document.body.innerHTML.trim() || 'CLEAR');
+    console.log(f.firstChild.data, f.lastChild.data);
+    console.log(f.childNodes);
+    document.body.appendChild(f);
+    console.log(document.body.innerHTML.trim());
+    console.log(f.firstChild.data, f.lastChild.data);
+    console.log(f.childNodes);
+    f.replaceWith(ok);
+    console.log(document.body.innerHTML.trim());
+    // necessary to re-populate all nodes
+    f.valueOf();
+    console.log(f.firstChild.data, f.lastChild.data);
+    console.log(f.childNodes);
+    ok.replaceWith(f);
+    console.log(document.body.innerHTML.trim());
+    f.remove();
+    console.log(f.firstChild.data, f.lastChild.data);
+    console.log(f.childNodes);
+    console.log(document.body.innerHTML.trim() || 'CLEAR');
+  </script>
+</head>
+</html>

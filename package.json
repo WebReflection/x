@@ -29,5 +29,10 @@
   ],
   "author": "Andrea Giammarchi",
   "license": "MIT",
-  "description": "XML strings translated to corresponding HTML nodes"
+  "description": "XML strings translated to corresponding HTML nodes",
+  "dependencies": {
+    "create-contextual-content": "^0.1.0",
+    "custom-function": "^1.0.6",
+    "uparser": "^0.2.1"
+  }
 }
