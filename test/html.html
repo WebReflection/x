@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script
+    data-imports="
+      custom-function/factory
+      domconstants/constants
+      domconstants/re
+      create-contextual-content
+      @webreflection/empty/array
+      @webreflection/uparser
+      uhtml
+    "
+    src="https://esm.run/data-imports"
+  ></script>
+  <script type="module">
+    import { html, svg } from '../src/html.js';
+
+    const content = () => {
+      console.time('content');
+      const result = html`<hr />`;
+      console.timeEnd('content');
+      return result;
+    };
+
+    document.body.replaceChildren(content());
+
+    setTimeout(() => {
+      document.body.replaceChildren(content());
+    }, 1000);
+  </script>
+</head>
+</html>

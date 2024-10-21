@@ -1,8 +1,8 @@
-import { isArray, skip } from './utils.js';
+import { isArray } from './utils.js';
 
 export default {
   __proto__: null,
-  [skip]: (node, name) => value => {
+  ['default']: (node, name) => value => {
       if (value == null) node.removeAttribute(name);
       else node.setAttribute(name, value);
   },
