@@ -1,4 +1,10 @@
 const { isArray } = Array;
 const skip = Symbol();
-const range = document.createRange();
-export { isArray, range, skip };
+export { isArray, skip };
+
+export const direct = Map => class extends Map {
+  set(key, value) {
+    super.set(key, value);
+    return value;
+  }
+}

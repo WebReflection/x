@@ -1,16 +1,98 @@
-import parse from './parse.js';
+import {
+  ATTRIBUTE_NODE,
+  COMMENT_NODE,
+  ELEMENT_NODE
+} from 'domconstants/constants';
+
+import Live from './classes/live.js';
+
+import { direct, skip } from './utils.js';
+import parser from './parser.js';
+
+const DirectWeakMap = direct(WeakMap);
 
 /**
- * Create an `html` or `svg` parser that retrieves once details per each passed template.
- * @param {boolean} svg specify if the tag should be for SVG or HTML.
- * @returns {(template:TemplateStringsArray | string[]) => import("./parse.js").Details}
+ * @param {number} i
+ * @param {boolean} init
+ * @param {Live[]} live 
+ * @returns
  */
-export default svg => {
-  const cache = new WeakMap;
-  const get = template => {
-    const details = parse(template, svg);
-    cache.set(template, details);
-    return details;
-  };
-  return template => cache.get(template) || get(template);
+const parse = (i, init, live) => ({
+  parse: (node, update, values) => {
+    if (init || live[i].node !== node) {
+      live[i] = new Live(node, update);
+      init = true;
+    }
+    return live[i++].update(values);
+  },
+  update: (where, what) => {
+    if (init) where.replaceChildren(what);
+    init = false;
+    i = 0;
+  }
+});
+
+let rendering = null;
+
+const rwm = new DirectWeakMap;
+export const render = (where, wonders) => {
+  const prev = rendering;
+  rendering = rwm.get(where) || rwm.set(where, parse(0, true, []));
+  try { rendering.update(where, wonders()) }
+  finally { rendering = prev }
+  return where;
 };
+
+/**
+ * @param {HTMLElement} node
+ * @returns {UpdateText}
+ */
+const textContent = node => value => {
+  node.textContent = value;
+};
+
+/**
+ * @param {unknown} attr
+ * @param {unknown} diff
+ * @returns {Update}
+ */
+const getUpdate = (attr, diff) => ({
+  [ATTRIBUTE_NODE]: (once, node, name) => {
+    let c = name[0], k = c in attr ? c : (name in attr ? name : skip);
+    return attr[k](once, node, c === k ? name.slice(1) : name);
+  },
+  [COMMENT_NODE]: (once, node) => diff(once, node),
+  [ELEMENT_NODE]: (_, node) => textContent(node),
+});
+
+/**
+ * @param {import("./types.js").Node} node
+ * @param {Update} update
+ * @param {unknown[]} values
+ * @returns {ParsedNode}
+ */
+const create = (node, update, values) => node.create(true, update).update(values).node;
+
+/**
+ * 
+ * @param {boolean} SVG
+ * @param {unknown} attr
+ * @param {unknown} diff
+ * @returns {ParsedNode}
+ */
+export const tag = (SVG, attr, diff) => {
+  const twm = new DirectWeakMap;
+  const parse = parser(SVG);
+  const update = getUpdate(attr, diff);
+  /**
+   * @param {TemplateStringsArray} template
+   * @param {...unknown} values
+   */
+  return (template, ...values) => (rendering?.parse || create)(
+    twm.get(template) || twm.set(template, parse(template)),
+    update,
+    values,
+  )
+};
+
+export { skip };

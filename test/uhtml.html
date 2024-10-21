@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script
+    data-imports="
+      custom-function/factory
+      domconstants/constants
+      domconstants/re
+      create-contextual-content
+      @webreflection/empty/array
+      @webreflection/uparser
+      uhtml
+    "
+    src="https://esm.run/data-imports"
+  ></script>
+  <script type="module">
+    import { render, html, svg } from 'uhtml';
+
+    const content = () => {
+      const fragment = html`<hr /><hr />`;
+      const single = html`<hr />`;
+      return html`${fragment}${single}`;
+    };
+
+    console.time('uhtml');
+    render(document.body, content);
+    console.timeEnd('uhtml');
+  </script>
+</head>
+</html>

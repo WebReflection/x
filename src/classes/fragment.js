@@ -1,7 +1,7 @@
-import overridden from 'custom-function/factory';
+import native from 'custom-function/factory';
 
 /** @extends {DocumentFragment} for real! */
-export default class Fragment extends overridden(DocumentFragment) {
+export default class Fragment extends native(DocumentFragment) {
   // static u/domdiff utility
   static diff(node, op) {
     return node instanceof Fragment ?
@@ -14,6 +14,7 @@ export default class Fragment extends overridden(DocumentFragment) {
   // privates
   #firstChild;  // the virtual firstChild as reference
   #lastChild;   // the virtual lastChild as reference
+
   /**
    * Drop known nodes from their parents and optionally keep its lastChild in there
    * @param {boolean} keepLast
@@ -28,7 +29,7 @@ export default class Fragment extends overridden(DocumentFragment) {
 
   // public utilities and accessors
   /** @param {DocumentFragment} fragment */
-  constructor(fragment) {
+  constructor(fragment = document.createDocumentFragment()) {
     super(fragment);
     this.#firstChild = super.firstChild;
     this.#lastChild = super.lastChild;
@@ -42,13 +43,11 @@ export default class Fragment extends overridden(DocumentFragment) {
       );
     }
   }
-  get isConnected() {
-    const { parentNode } = this.#lastChild;
-    return !!parentNode && parentNode !== this;
-  }
+
   get firstChild() { return this.#firstChild; }
   get lastChild() { return this.#lastChild; }
   get parentNode() { return this.#lastChild.parentNode; }
+
   get childNodes() {
     let firstChild = this.#firstChild;
     const childNodes = [firstChild], lastChild = this.#lastChild;
@@ -56,7 +55,14 @@ export default class Fragment extends overridden(DocumentFragment) {
       childNodes.push(firstChild = firstChild.nextSibling);
     return childNodes;
   }
+
+  get isConnected() {
+    const { parentNode } = this.#lastChild;
+    return !!parentNode && parentNode !== this;
+  }
+
   remove() { this.#remove(false); }
+
   /** @param {Node} node */
   replaceWith(node) {
     const last = this.#remove(true);
@@ -66,6 +72,7 @@ export default class Fragment extends overridden(DocumentFragment) {
     // let it throw if child wasn't even connected
     child.replaceWith(node);
   }
+
   valueOf() {
     const { parentNode } = this.#lastChild;
     // fragment is not even connected

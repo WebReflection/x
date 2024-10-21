@@ -2,37 +2,44 @@
   "name": "@webreflection/x",
   "version": "0.1.6",
   "type": "module",
-  "main": "./src/x.js",
-  "module": "./src/x.js",
+  "main": "./src/html.js",
+  "module": "./src/html.js",
   "exports": {
-    ".": "./src/x.js",
-    "./custom": "./src/custom.js",
-    "./parse": "./src/parse.js",
+    ".": "./x.js",
+    "./attributes": "./src/attributes.js",
+    "./differ": "./src/differ.js",
+    "./html": "./src/html.js",
     "./tag": "./src/tag.js",
-    "./node": "./src/node.js",
-    "./fragment": "./src/fragment.js"
+    "./fragment": "./src/classes/fragment.js"
   },
   "files": [
-    "./src/*.js",
+    "./src/",
     "LICENSE",
     "README.md"
   ],
   "scripts": {
-    "build": "node custom.cjs",
+    "build": "rollup --config build.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
     "template",
-    "JSX",
-    "XML",
-    "HTML"
+    "HTML",
+    "SVG",
+    "X-HTML"
   ],
   "author": "Andrea Giammarchi",
   "license": "MIT",
-  "description": "XML strings translated to corresponding HTML nodes",
+  "description": "X-HTML & SVG core functionalities for template literal parsing",
   "dependencies": {
-    "create-contextual-content": "^0.1.0",
+    "@webreflection/empty": "^1.0.0",
+    "@webreflection/uparser": "^0.3.3",
     "custom-function": "^1.0.6",
+    "domconstants": "^1.1.6",
     "uparser": "^0.2.1"
+  },
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "^15.3.0",
+    "@rollup/plugin-terser": "^0.4.4",
+    "rollup": "^4.24.0"
   }
 }

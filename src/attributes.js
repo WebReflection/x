@@ -1,16 +1,22 @@
 import { isArray, skip } from './utils.js';
 
-export default {
+export default Object.freeze({
   __proto__: null,
-  [skip]: (node, name) => value => {
+  [skip]: (_, node, name) => value => {
       if (value == null) node.removeAttribute(name);
       else node.setAttribute(name, value);
   },
-  ['@']: (node, name, listener = [null]) => value => {
-    node.removeEventListener(name, ...listener);
-    listener = isArray(value) ? value : [value || null];
-    node.addEventListener(name, ...listener);
+  ['@']: (_, node, name) => {
+    let listener;
+    return value => {
+      const current = isArray(value) ? value : [value || null];
+      if (listener && current[0] !== listener[0])
+        node.removeEventListener(name, ...listener);
+      if (current[0])
+        node.addEventListener(name, ...current);
+      listener = current;
+    };
   },
-  ['?']: (node, name) => value => { node.toggleAttribute(name, value) },
-  ['.']: (node, name) => value => { node[name] = value },
-};
+  ['?']: (_, node, name) => value => { node.toggleAttribute(name, value) },
+  ['.']: (_, node, name) => value => { node[name] = value },
+});

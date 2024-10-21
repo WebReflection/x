@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script
+    data-imports="
+      custom-function/factory
+      domconstants/constants
+      domconstants/re
+      create-contextual-content
+      @webreflection/empty/array
+      @webreflection/uparser
+    "
+    src="https://esm.run/data-imports"
+  ></script>
+  <script type="module">
+    import parser from '../src/parser.js';
+
+    const html = parser(false);
+    const svg = parser(true);
+    const target = (p, i) => p.childNodes[i];
+
+    console.assert('ownerSVGElement' in svg`<rect />`.node);
+    console.log(html`${'text'}`.node);
+
+    var { type, node, paths } = html`
+      <div at=${'tribute'}>${'text'}<span /><span /><p>${'p'}</p></div>
+    `;
+
+    for (const { type, name, path } of paths) {
+      console.log(type, name, path, path.reduce(target, node));
+    }
+
+  </script>
+</head>
+</html>
