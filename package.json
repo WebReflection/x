@@ -1,6 +1,6 @@
 {
   "name": "@webreflection/x",
-  "version": "0.1.6",
+  "version": "0.2.0",
   "type": "module",
   "main": "./src/html.js",
   "module": "./src/html.js",
@@ -32,10 +32,9 @@
   "description": "X-HTML & SVG core functionalities for template literal parsing",
   "dependencies": {
     "@webreflection/empty": "^1.0.0",
-    "@webreflection/uparser": "^0.3.3",
-    "custom-function": "^1.0.6",
-    "domconstants": "^1.1.6",
-    "uparser": "^0.2.1"
+    "@webreflection/uparser": "^0.4.0",
+    "custom-function": "^2.0.0",
+    "domconstants": "^1.1.6"
   },
   "devDependencies": {
     "@rollup/plugin-node-resolve": "^15.3.0",

@@ -56,11 +56,6 @@ export default class Fragment extends native(DocumentFragment) {
     return childNodes;
   }
 
-  get isConnected() {
-    const { parentNode } = this.#lastChild;
-    return !!parentNode && parentNode !== this;
-  }
-
   remove() { this.#remove(false); }
 
   /** @param {Node} node */

@@ -1,5 +1,7 @@
 # @webreflection/x
 
+X-HTML & SVG core functionalities for template literal parsing.
+
 If you're serious about *JSX* like strings or *XML* like template literals to produce valid and expected *HTML*, this is your one stop shop:
 
   * it's strictly **XML** compliant, it uses the *XML* parsing option indeed
