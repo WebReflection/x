@@ -12,4 +12,12 @@ export default [
       file: './x.js',
     }
   },
+  {
+    plugins,
+    input: './src/lib.js',
+    output: {
+      esModule: true,
+      file: './lib.js',
+    }
+  },
 ];

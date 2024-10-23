@@ -1,6 +1,6 @@
 {
   "name": "@webreflection/x",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "type": "module",
   "main": "./src/html.js",
   "module": "./src/html.js",
@@ -9,8 +9,10 @@
     "./attributes": "./src/attributes.js",
     "./differ": "./src/differ.js",
     "./html": "./src/html.js",
+    "./lib": "./src/lib.js",
     "./tag": "./src/tag.js",
-    "./fragment": "./src/classes/fragment.js"
+    "./fragment": "./src/classes/fragment.js",
+    "./utils": "./src/utils.js"
   },
   "files": [
     "./src/",

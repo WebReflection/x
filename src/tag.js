@@ -14,7 +14,7 @@ const DirectWeakMap = direct(WeakMap);
 /**
  * @param {number} i
  * @param {boolean} init
- * @param {Live[]} live 
+ * @param {Live[]} live
  * @returns
  */
 const parse = (i, init, live) => ({
@@ -34,62 +34,58 @@ const parse = (i, init, live) => ({
 
 let rendering = null;
 
-const rwm = new DirectWeakMap;
+const dwm = new DirectWeakMap;
 export const render = (where, wonders) => {
   const prev = rendering;
-  rendering = rwm.get(where) || rwm.set(where, parse(0, true, []));
+  rendering = dwm.get(where) || dwm.set(where, parse(0, true, []));
   try { rendering.update(where, wonders()) }
   finally { rendering = prev }
   return where;
 };
 
 /**
- * @param {HTMLElement} node
- * @returns {UpdateText}
- */
-const textContent = node => value => {
-  node.textContent = value;
-};
-
-/**
  * @param {unknown} attr
  * @param {unknown} diff
- * @returns {Update}
+ * @returns {import("./types.js").Update}
  */
-const getUpdate = (attr, diff) => ({
+const getUpdate = (SVG, attr, diff) => ({
   [ATTRIBUTE_NODE]: (once, node, name) => {
     let c = name[0], k = c in attr ? c : (name in attr ? name : attribute);
-    return attr[k](once, node, c === k ? name.slice(1) : name);
+    return attr[k](node, c === k ? name.slice(1) : name, once, SVG);
   },
-  [COMMENT_NODE]: (once, node) => diff(once, node),
-  [ELEMENT_NODE]: (_, node) => textContent(node),
+  [COMMENT_NODE]: (once, node) => diff(node, once, SVG),
+  [ELEMENT_NODE]: (_, node) => value => {
+    node.textContent = value == null ? '' : value;
+  },
 });
 
 /**
  * @param {import("./types.js").Node} node
- * @param {Update} update
+ * @param {import("./types.js").Update} update
  * @param {unknown[]} values
- * @returns {ParsedNode}
+ * @returns {import("./types.js").ParsedNode}
  */
-const create = (node, update, values) => node.create(true, update).update(values).node;
+const create = (node, update, values) => (
+  node.create(true, update).update(values)
+).node;
 
 /**
  * 
  * @param {boolean} SVG
  * @param {unknown} attr
  * @param {unknown} diff
- * @returns {ParsedNode}
+ * @returns {import("./types.js").ParsedNode}
  */
 export const tag = (SVG, attr, diff) => {
-  const twm = new DirectWeakMap;
+  const dwm = new DirectWeakMap;
   const parse = parser(SVG);
-  const update = getUpdate(attr, diff);
+  const update = getUpdate(SVG, attr, diff);
   /**
    * @param {TemplateStringsArray} template
    * @param {...unknown} values
    */
   return (template, ...values) => (rendering?.parse || create)(
-    twm.get(template) || twm.set(template, parse(template)),
+    dwm.get(template) || dwm.set(template, parse(template)),
     update,
     values,
   )

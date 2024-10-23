@@ -25,6 +25,10 @@
       return [fragment, single];
     };
 
+    console.time('x/html');
+    document.body.replaceChildren(...content());
+    console.timeEnd('x/html');
+
     const Greetings = component(
       what => {
         const content = what === 'World' ?
@@ -41,10 +45,6 @@
       render(document.body, Greetings(what));
       console.timeEnd('render');
     };
-
-    console.time('x/html');
-    document.body.replaceChildren(...content());
-    console.timeEnd('x/html');
 
     setTimeout(update, 1000, 'World');
     setTimeout(update, 2000, 'There');

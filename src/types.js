@@ -17,7 +17,6 @@
  * @param {AttributeName} AttributeName
  * @param {ParsedNode} ParsedNode
  * @param {Update} Update
- * @param {UpdateText} UpdateText
  */
 export default (
   Fragment,
@@ -27,7 +26,6 @@ export default (
   AttributeName,
   ParsedNode,
   Update,
-  UpdateText,
 ) => [
   Fragment,
   Live,
@@ -36,5 +34,4 @@ export default (
   AttributeName,
   ParsedNode,
   Update,
-  UpdateText,
 ];

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script
+    data-imports="
+      custom-function/factory
+      domconstants/constants
+      domconstants/re
+      create-contextual-content
+      @webreflection/empty/array
+      @webreflection/uparser
+      udomdiff
+      uhtml
+    "
+    src="https://esm.run/data-imports"
+  ></script>
+  <script type="module">
+    import { render, html } from '../src/html.js';
+    import Fragment from '../src/classes/fragment.js';
+
+    function FragmentCounter(i) {
+      const self = this || {
+        node: new Fragment,
+        update(i) {
+          FragmentCounter.call(this, i);
+        }
+      };
+      return render(self.node, () => html`
+        <button @click=${() => self.update(i - 1)}>-</button>
+        ${i}
+        <button @click=${() => self.update(i + 1)}>+</button>
+      `);
+    }
+
+    function DivCounter(i) {
+      const self = this || {
+        node: html`<div />`,
+        update(i) {
+          DivCounter.call(this, i);
+        }
+      };
+      return render(self.node, () => html`
+        <button @click=${() => self.update(i - 1)}>-</button>
+        ${i}
+        <button @click=${() => self.update(i + 1)}>+</button>
+      `);
+    }
+
+    document.body.appendChild(FragmentCounter(0));
+    document.body.appendChild(DivCounter(1));
+    document.body.appendChild(DivCounter(2));
+    document.body.appendChild(DivCounter(3));
+  </script>
+</head>
+</html>

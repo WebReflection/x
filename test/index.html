@@ -14,8 +14,7 @@
 </script>
   </script>
   <script type="module">
-    import { html, svg, skip, update } from '../src/node.js';
-    
+    import { html } from '../x.js';
     class XFoo extends HTMLElement {
       connectedCallback() {
         console.log(this.localName, 'is live');
@@ -34,8 +33,6 @@
     `;
     
     document.body.appendChild(fragment);
-    
-    setTimeout(update, 1000, fragment, [false, skip, 'ok', td, li]);
     </script>
 </head>
 </html>

@@ -1,24 +1,17 @@
-import { isArray, attribute } from './utils.js';
+import {
+  attribute,
+  handleListener,
+  setAttribute,
+  setProperty,
+  toggleAttribute,
+} from './utils.js';
 
-export default Object.freeze({
+export default {
   __proto__: null,
   // default attribute
-  [attribute]: (_, node, name) => value => {
-      if (value == null) node.removeAttribute(name);
-      else node.setAttribute(name, value);
-  },
+  [attribute]: (node, name) => value => setAttribute(node, name, value),
   // special prefixed cases where `name` is already sliced
-  ['@']: (_, node, name) => {
-    let listener;
-    return value => {
-      const current = isArray(value) ? value : [value || null];
-      if (listener && current[0] !== listener[0])
-        node.removeEventListener(name, ...listener);
-      if (current[0])
-        node.addEventListener(name, ...current);
-      listener = current;
-    };
-  },
-  ['?']: (_, node, name) => value => { node.toggleAttribute(name, value) },
-  ['.']: (_, node, name) => value => { node[name] = value },
-});
+  ['@']: (node, type) => handleListener(node, type),
+  ['?']: (node, name) => value => toggleAttribute(node, name, value),
+  ['.']: (node, prop) => value => setProperty(node, prop, value),
+};

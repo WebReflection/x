@@ -1,10 +1,4 @@
-const single = node => value => {
-  const nullish = value == null;
-  node.replaceWith(
-    nullish || typeof value !== 'object' ?
-      document.createTextNode(nullish ? '' : value) : value.valueOf()
-  );
-};
+import { diffOnce } from './utils.js';
 
 const multi = previous => {
   let text;
@@ -24,4 +18,4 @@ const multi = previous => {
   };
 };
 
-export default (once, node) => (once ? single : multi)(node);
+export default (node, once) => (once ? diffOnce : multi)(node);

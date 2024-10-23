@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script
+    data-imports="
+      custom-function/factory
+      domconstants/constants
+      domconstants/re
+      create-contextual-content
+      @webreflection/empty/array
+      @webreflection/uparser
+      udomdiff
+      uhtml
+    "
+    src="https://esm.run/data-imports"
+  ></script>
+  <script type="module">
+    import { render, html, svg } from '../lib.js';
+
+    console.time('div');
+    const div = html`<div style=${'border:1px solid black'} class=${'test'} aria=${{role: 'button'}} data=${{test: 123}} />`;
+    console.timeEnd('div');
+
+    console.time('rect');
+    const rect = svg`<rect style=${'border:1px solid black'} class=${'test'} aria=${{role: 'button'}} data=${{test: 123}} />`;
+    console.timeEnd('rect');
+
+    document.body.append(div, rect);
+  </script>
+</head>
+</html>
