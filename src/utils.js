@@ -1,6 +1,6 @@
 const { isArray } = Array;
-const skip = Symbol();
-export { isArray, skip };
+const attribute = Symbol();
+export { isArray, attribute };
 
 export const direct = Map => class extends Map {
   set(key, value) {

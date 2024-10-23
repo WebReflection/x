@@ -6,7 +6,7 @@ import {
 
 import Live from './classes/live.js';
 
-import { direct, skip } from './utils.js';
+import { direct, attribute } from './utils.js';
 import parser from './parser.js';
 
 const DirectWeakMap = direct(WeakMap);
@@ -58,7 +58,7 @@ const textContent = node => value => {
  */
 const getUpdate = (attr, diff) => ({
   [ATTRIBUTE_NODE]: (once, node, name) => {
-    let c = name[0], k = c in attr ? c : (name in attr ? name : skip);
+    let c = name[0], k = c in attr ? c : (name in attr ? name : attribute);
     return attr[k](once, node, c === k ? name.slice(1) : name);
   },
   [COMMENT_NODE]: (once, node) => diff(once, node),
@@ -95,4 +95,4 @@ export const tag = (SVG, attr, diff) => {
   )
 };
 
-export { skip };
+export { attribute };

@@ -1,11 +1,13 @@
-import { isArray, skip } from './utils.js';
+import { isArray, attribute } from './utils.js';
 
 export default Object.freeze({
   __proto__: null,
-  [skip]: (_, node, name) => value => {
+  // default attribute
+  [attribute]: (_, node, name) => value => {
       if (value == null) node.removeAttribute(name);
       else node.setAttribute(name, value);
   },
+  // special prefixed cases where `name` is already sliced
   ['@']: (_, node, name) => {
     let listener;
     return value => {

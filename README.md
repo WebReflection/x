@@ -1,59 +1,70 @@
 # @webreflection/x
 
-X-HTML & SVG core functionalities for template literal parsing.
+X-HTML & SVG core functionalities for template literal parsing, offering a basic solution all inclusive within 2KB minified and brotlied.
 
-If you're serious about *JSX* like strings or *XML* like template literals to produce valid and expected *HTML*, this is your one stop shop:
+### x/html
 
-  * it's strictly **XML** compliant, it uses the *XML* parsing option indeed
-  * errors are embedded and shown/described on the page when these happen
-  * attributes require a value, even if empty (i.e. `<input disabled="" />`)
-  * it's a template tag, hence it can be used as `x([xhtml])` too
-  * it doesn't promote Custom Elements out of the box, you need to `document.importNode(x(['<x-foo />']), true)` explicitly, if that's a desired outcome **before** the node goes live
-  * the `@webreflection/x/custom` export allows you to pass a `document`, a `DOMParser`, and a `transform` utility for your interpolations. All have a default `globalThis` value, the `transform` does nothing if not specified.
-  * the `@webreflection/x/path` export allows you to parse without caring about attributes quoted boundaries, it is compatible with SVG nodes, and it's not a `tag` function but it accepts `template` like references and an `svg` bolean parameter to let you parse and retrieve a `[fragment, paths]` result, where the `fragment` is the one containing the list of elements and the `paths` is an array of `{ type, name, path }` references that matches the `values` you might have gotten via your own `tag` based function, basically replacing 3 dependencies from *uhtml*
+This is also the default export and it offers already a lot:
 
+  * `@`, `.` and `?` attributes prefix work like in *uhtml*
+  * other attributes work via `setAttribute` or `removeAttribute` if the value is `null`
+  * `html` and `svg` returns already updated nodes if used outside a `render` call
+  * nodes and primitives are supported as interpolations
+  * **no** Arrays, callbacks, or other custom things are supported but it's possible to bring in your own logic for both *attributes* and *interpolated* values
+
+**Example**
 ```js
-import x from '@webreflection/x';
+import { render, html, svg, component } from '@webreflection/x';
 
 document.body.appendChild(
-  x`<span /><span />`
+  // one off fragment
+  html`
+    <span class=${'a'} />
+    ${'content'}
+    <span class=${'b'} />
+  `
 );
 
 document.body.innerHTML;
-// <span></span><span></span>
-```
+// <span class="a"></span>
+// content
+// <span class="b"></span>
 
-### x/custom
-```js
-import customX from '@webreflection/x/custom';
+// components friendly
+const App = component((name) => html`<h1>Hello ${name}!</h1>`);
 
-const x = customX({
-  transform: attribute => `"${attribute}"`
+render(document.body, App('World'));
+
+setTimeout(() => {
+  render(document.body, App('User'));
 });
 
-document.body.appendChild(
-  x`<span test=${1} /><span />`
-  //           ^  ^ no quotes around
-);
-
-document.body.innerHTML;
-// <span test="1"></span><span></span>
+// direct render
+render(document.body, () => html`<div>Hello There!</div>`);
 ```
 
-### x/node
+### x/tag
+
+Allow custom parsing for both attributes and nodes meant as interpolation.
+
+This is basically how `x/html` is created:
 ```js
-// exports: html, svg, update, skip, x
-import { html, svg, update } from '@webreflection/x/node';
+import { render, attribute, tag } from '@webreflection/x/tag';
+// attribute is a symbol used as default attribute parser
+// when no other special cases are meant
 
-const fragment = x`<span test=${1} /><span />`;
+import attrs from '@webreflection/x/attributes';
+import differ from '@webreflection/x/differ';
+export const html = tag(false, attrs, differ);
+export const svg = tag(true, attrs, differ);
 
-document.body.appendChild(fragment);
-
-document.body.innerHTML;
-// <span test="1"></span><span></span>
-
-setTimeout(update, 1000, fragment, [2]);
-// will update test attribute as 2
+export const component = callback => (...args) => () => callback(...args);
 ```
 
-That's literally it 😇
+Feel free to check [attributes](./src/attributes.js) or [differ](./src/differ.js) implementations to know more.
+
+The first argument is a `boolean` that indicates if the node was created for a *one-off* operation or not.
+
+When `html` and `svg` tags are used outside a `render` call, that value is `true`, meaning the node is created once like *uhtml/node* would do.
+
+In all other cases *updates* will be applied per each render over the same node and callback returning the same templates around.
