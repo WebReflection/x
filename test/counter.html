@@ -17,41 +17,80 @@
     src="https://esm.run/data-imports"
   ></script>
   <script type="module">
-    import { render, html } from '../src/html.js';
+    import { render, html } from '../src/lib.js';
     import Fragment from '../src/classes/fragment.js';
 
-    function FragmentCounter(i) {
-      const self = this || {
-        node: new Fragment,
-        update(i) {
-          FragmentCounter.call(this, i);
-        }
-      };
-      return render(self.node, () => html`
-        <button @click=${() => self.update(i - 1)}>-</button>
-        ${i}
-        <button @click=${() => self.update(i + 1)}>+</button>
-      `);
+    class Component {
+      #node = null;
+      #view = () => this.view();
+      view() {
+        throw new Error('unknown view()');
+      }
+      render() {
+        render(this, this.#view);
+        return this.#node;
+      }
+      replaceChildren(node) {
+        this.#node = node;
+      }
+      valueOf() {
+        return this.render();
+      }
     }
 
-    function DivCounter(i) {
-      const self = this || {
-        node: html`<div />`,
-        update(i) {
-          DivCounter.call(this, i);
-        }
-      };
-      return render(self.node, () => html`
-        <button @click=${() => self.update(i - 1)}>-</button>
-        ${i}
-        <button @click=${() => self.update(i + 1)}>+</button>
-      `);
+    class Counter extends Component {
+      constructor(i = 0) {
+        super();
+        this.i = i;
+      }
+      decrement = [() => {
+        this.i--;
+        this.render();
+      }];
+      increment = [() => {
+        this.i++;
+        this.render();
+      }];
     }
 
-    document.body.appendChild(FragmentCounter(0));
-    document.body.appendChild(DivCounter(1));
-    document.body.appendChild(DivCounter(2));
-    document.body.appendChild(DivCounter(3));
+    class FragmentCounter extends Counter {
+      view() {
+        return html`
+          <button @click=${this.decrement}>-</button>
+          ${this.i}
+          <button @click=${this.increment}>+</button>
+        `;
+      }
+    }
+
+    class DivCounter extends Counter {
+      view = () => html`
+        <div>
+          <button @click=${this.decrement}>-</button>
+          ${this.i}
+          <button @click=${this.increment}>+</button>
+        </div>
+      `;
+    }
+
+    (globalThis.render = () => {
+      console.time('counters');
+      // render(document.body, () => html`
+      //   ${new FragmentCounter(0)}
+      //   ${new DivCounter(1)}
+      //   ${new DivCounter(2)}
+      //   ${new DivCounter(3)}
+      // `);
+      render(document.body, () => html`
+        <div>${[
+          new FragmentCounter(0).valueOf(),
+          new DivCounter(1).valueOf(),
+          new DivCounter(2).valueOf(),
+          new DivCounter(3).valueOf(),
+        ]}</div>
+      `);
+      console.timeEnd('counters');
+    })();
   </script>
 </head>
 </html>

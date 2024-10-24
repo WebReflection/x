@@ -1,6 +1,6 @@
 {
   "name": "@webreflection/x",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "type": "module",
   "main": "./src/html.js",
   "module": "./src/html.js",
@@ -36,7 +36,8 @@
     "@webreflection/empty": "^1.0.0",
     "@webreflection/uparser": "^0.4.0",
     "custom-function": "^2.0.0",
-    "domconstants": "^1.1.6"
+    "domconstants": "^1.1.6",
+    "udomdiff": "^1.1.0"
   },
   "devDependencies": {
     "@rollup/plugin-node-resolve": "^15.3.0",

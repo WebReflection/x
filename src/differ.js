@@ -12,8 +12,9 @@ const multi = previous => {
     }
     else current = value;
     if (previous !== current) {
-      previous.replaceWith(current.valueOf());
-      previous = current;
+      const node = current.valueOf();
+      previous.replaceWith(node);
+      previous = node;
     }
   };
 };
