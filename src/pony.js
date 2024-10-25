@@ -8,7 +8,7 @@ export default document => {
   const COMMENT_NODE = 8;
   const DOCUMENT_FRAGMENT_NODE = 11;
   
-  const { isArray: isArray$1 } = Array;
+  const { isArray } = Array;
   const attribute = Symbol();
   
   const direct = Map => class extends Map {
@@ -37,7 +37,7 @@ export default document => {
   const handleListener = (node, type) => {
     let prev = empty$1;
     return value => {
-      const curr = value ? (isArray$1(value) ? value : [value]) : empty$1;
+      const curr = value ? (isArray(value) ? value : [value]) : empty$1;
       const different = curr[0] != prev[0];
       if (different && prev[0])
         node.removeEventListener(type, ...prev);
@@ -787,7 +787,7 @@ export default document => {
       if (init) {
         init = false;
         if (value && typeof value === 'object') {
-          if (isArray$1(value)) update = array(node, empty);
+          if (isArray(value)) update = array(node, empty);
           else update = dom(node);
         }
         else {

@@ -1,4 +1,5 @@
 import {
+  isArray,
   attribute,
   handleListener,
   key,
