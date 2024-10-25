@@ -13,11 +13,13 @@
       @webreflection/uparser
       udomdiff
       uhtml
+      gc-hook
+      gc-hook/track
     "
     src="https://esm.run/data-imports"
   ></script>
   <script type="module">
-    import { render, html } from '../src/lib.js';
+    import { render, html } from '../src/html.js';
     import Fragment from '../src/classes/fragment.js';
 
     class Component {
@@ -73,6 +75,16 @@
       `;
     }
 
+    class KeyedCounter extends Counter {
+      view = () => html`
+        <div key=${'keyed-element'}>
+          <button @click=${this.decrement}>-</button>
+          ${this.i}
+          <button @click=${this.increment}>+</button>
+        </div>
+      `;
+    }
+
     (globalThis.render = () => {
       console.time('counters');
       // render(document.body, () => html`
@@ -85,7 +97,7 @@
         <div>${[
           new FragmentCounter(0).valueOf(),
           new DivCounter(1).valueOf(),
-          new DivCounter(2).valueOf(),
+          new KeyedCounter(2).valueOf(),
           new DivCounter(3).valueOf(),
         ]}</div>
       `);

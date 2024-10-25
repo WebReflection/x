@@ -1,4 +1,4 @@
-import { diffOnce } from './utils.js';
+import { diffOnce } from '../utils.js';
 
 const multi = previous => {
   let text;

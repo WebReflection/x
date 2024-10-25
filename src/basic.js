@@ -1,8 +1,8 @@
 import { render, tag } from './tag.js';
 export { render };
 
-import attrs from './lib/attributes.js';
-import differ from './lib/differ.js';
+import attrs from './basic/attributes.js';
+import differ from './basic/differ.js';
 export const html = tag(false, attrs, differ);
 export const svg = tag(true, attrs, differ);
 

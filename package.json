@@ -1,27 +1,28 @@
 {
   "name": "@webreflection/x",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "type": "module",
+  "unpkg": "./x.js",
   "main": "./src/html.js",
   "module": "./src/html.js",
   "exports": {
     ".": "./x.js",
-    "./attributes": "./src/attributes.js",
-    "./differ": "./src/differ.js",
-    "./html": "./src/html.js",
-    "./lib": "./src/lib.js",
-    "./tag": "./src/tag.js",
+    "./basic": "./src/basic.js",
     "./fragment": "./src/classes/fragment.js",
+    "./html": "./src/html.js",
+    "./pony": "./src/pony.js",
+    "./tag": "./src/tag.js",
     "./utils": "./src/utils.js"
   },
   "files": [
     "./src/",
     "LICENSE",
-    "README.md"
+    "README.md",
+    "x.js"
   ],
   "scripts": {
-    "build": "rollup --config build.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "rollup --config build.js && node pony.js && npm run size",
+    "size": "cat x.js | brotli | wc -c"
   },
   "keywords": [
     "template",
@@ -31,12 +32,13 @@
   ],
   "author": "Andrea Giammarchi",
   "license": "MIT",
-  "description": "X-HTML & SVG core functionalities for template literal parsing",
+  "description": "Currently the possible future of uhtml",
   "dependencies": {
     "@webreflection/empty": "^1.0.0",
     "@webreflection/uparser": "^0.4.0",
     "custom-function": "^2.0.0",
     "domconstants": "^1.1.6",
+    "gc-hook": "^0.4.1",
     "udomdiff": "^1.1.0"
   },
   "devDependencies": {

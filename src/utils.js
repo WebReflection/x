@@ -7,7 +7,9 @@ export const direct = Map => class extends Map {
     super.set(key, value);
     return value;
   }
-}
+};
+
+export const key = () => key;
 
 export const setAttribute = (node, name, value) => {
   if (value == null) node.removeAttribute(name);

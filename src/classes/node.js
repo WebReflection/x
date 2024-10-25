@@ -5,33 +5,12 @@ import {
 
 import empty from '@webreflection/empty/array';
 
-import Fragment from "./fragment.js";
-
-class Info {
-  /**
-   * @param {Node} node
-   * @param {((value:unknown) => void)[]} updates
-   */
-  constructor(node, updates) {
-    this.node = node;
-    this.updates = updates;
-  }
-
-  /**
-   * @param {unknown[]} values
-   * @returns {this}
-   */
-  update(values) {
-    const { updates } = this;
-    for (let { length } = updates, i = 0; i < length; i++)
-      updates[i](values[i]);
-    return this;
-  }
-}
+import Fragment from './fragment.js';
+import Info from './info.js';
 
 export default class Node {
   /**
-   * @param {1 | 3 | 8 | 11} type the node type
+   * @param {1 | 3 | 8 | 11} type
    * @param {Element | Text | Comment | DocumentFragment} node
    * @param {import("../types.js").Path[]} paths
    */
@@ -42,12 +21,11 @@ export default class Node {
   }
 
   /**
-   * 
-   * @param {boolean} once create it once live or render it and update it multiple times
-   * @param {*} update
+   * @param {import("../types.js").Update} update
+   * @param {boolean} once
    * @returns {Info}
    */
-  create(once, update) {
+  create(update, once) {
     const { type, node, paths } = this;
     const { length } = paths;
     const updates = length ? [] : empty;
@@ -62,8 +40,8 @@ export default class Node {
           node = node.childNodes[path[i]];
       }
       updates[i] = type === ATTRIBUTE_NODE ?
-        update[ATTRIBUTE_NODE](once, node, name) :
-        update[type](once, node);
+        update[ATTRIBUTE_NODE](node, name, once) :
+        update[type](node, once);
     }
     return new Info(
       type === DOCUMENT_FRAGMENT_NODE ? new Fragment(dom) : dom,

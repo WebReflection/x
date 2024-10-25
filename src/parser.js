@@ -8,6 +8,7 @@ import {
 import { TEXT_ELEMENTS } from 'domconstants/re';
 
 import Node from './classes/node.js';
+import Keyed from './classes/keyed.js';
 import Path from './classes/path.js';
 
 import { html, svg } from './create.js'; // 'create-contextual-content';
@@ -16,6 +17,8 @@ import parser from '@webreflection/uparser';
 
 const prefix = '_x';
 const { indexOf } = empty;
+
+let key = -1;
 
 /**
  * @param {Node} node
@@ -41,6 +44,7 @@ const map = node => {
 const parse = (SVG, node, paths, i) => {
   switch (node.nodeType) {
     case COMMENT_NODE: {
+      // holes
       if (node.data === prefix + i) {
         paths.push(new Path(COMMENT_NODE, '#comment', map(node)));
         i++;
@@ -49,16 +53,15 @@ const parse = (SVG, node, paths, i) => {
     }
     case ELEMENT_NODE: {
       let path, search;
-      // these are attributes
+      // attributes
       while (node.hasAttribute(search = prefix + i)) {
-        paths.push(new Path(
-          ATTRIBUTE_NODE,
-          node.getAttribute(search),
-          path || (path = map(node)))
-        );
+        const name = node.getAttribute(search);
+        if (name === 'key') key = paths.length;
+        paths.push(new Path(ATTRIBUTE_NODE, name, path || (path = map(node))));
         node.removeAttribute(search);
         i++;
       }
+      // text only elements: plaintext, script, style, textarea, title, xmp
       if (
         !SVG &&
         TEXT_ELEMENTS.test(node.localName) &&
@@ -91,6 +94,9 @@ export default SVG => {
         while (i < length) i = parse(SVG, tw.nextNode(), paths, i);
       }
     }
-    return new Node(node.nodeType, node, paths);
+    const Class = key < 0 ? Node : Keyed;
+    const parsed = new Class(node.nodeType, node, paths, key);
+    key = -1;
+    return parsed;
   };
 };

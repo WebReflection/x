@@ -6,7 +6,7 @@
 
 /** @typedef {HTMLElement | SVGElement | Text | Comment | Fragment} ParsedNode */
 /** @typedef {(value: string | bigint | boolean | number | null | void) => void} UpdateText */
-/** @typedef {{1: (once: boolean, node: HTMLElement) => UpdateText; 2: (once: boolean, node: Element, name: string) => function; 8: (once: boolean, node: Comment) => function; }} Update */
+/** @typedef {{1: (node: HTMLElement | SVGElement, once: boolean) => UpdateText; 2: (node: Element, name: string, once: boolean) => function; 8: (node: Comment, once: boolean) => function; }} Update */
 /** @typedef {string} AttributeName */
 
 /**

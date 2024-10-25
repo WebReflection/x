@@ -1,6 +1,7 @@
 import {
   attribute,
   handleListener,
+  key,
   setAttribute,
   setProperty,
   toggleAttribute,
@@ -30,6 +31,9 @@ const storeValueFor = (callback, node, name) => {
 // (explicit is better than implicit and related reason)
 export default {
   __proto__: null,
+  // this is by default a no-op as it does nothing on updates but
+  // it's passed value is used to return the keyed node
+  key,
   // default attributes handler
   [attribute]: (node, name, once) => once ?
     value => setAttribute(node, name, value) :

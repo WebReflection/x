@@ -5,7 +5,7 @@ export default class Live {
    */
   constructor(node, update) {
     this.node = node;
-    this.info = node.create(false, update);
+    this.info = node.create(update, false);
   }
 
   /**
@@ -13,6 +13,6 @@ export default class Live {
    * @returns {import("../types.js").ParsedNode}
    */
   update(values) {
-    return this.info.update(values).node;
+    return this.info.update(values);
   }
 }

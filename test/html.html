@@ -13,41 +13,23 @@
       @webreflection/uparser
       udomdiff
       uhtml
+      gc-hook
+      gc-hook/track
     "
     src="https://esm.run/data-imports"
   ></script>
   <script type="module">
-    import { component, render, html, svg } from '../src/html.js';
+    import { render, html, svg } from '../src/html.js';
 
-    const content = () => {
-      const fragment = html`<hr /><hr />`;
-      const single = html`<hr />`;
-      return [fragment, single];
-    };
+    console.time('div');
+    const div = html`<div style=${'border:1px solid black'} class=${'test'} aria=${{role: 'button'}} data=${{test: 123}} />`;
+    console.timeEnd('div');
 
-    console.time('x/html');
-    document.body.replaceChildren(...content());
-    console.timeEnd('x/html');
+    console.time('rect');
+    const rect = svg`<rect style=${'border:1px solid black'} class=${'test'} aria=${{role: 'button'}} data=${{test: 123}} />`;
+    console.timeEnd('rect');
 
-    const Greetings = component(
-      what => {
-        const content = what === 'World' ?
-          html`<em class=${'meh'}>${what}${html`!!!`}</em>` :
-          // html`<em>${what}</em>` :
-          html`<strong>${what}</strong>`
-        ;
-        return html`<div>Hello ${content}</div>`;
-      }
-    );
-
-    const update = what => {
-      console.time('render');
-      render(document.body, Greetings(what));
-      console.timeEnd('render');
-    };
-
-    setTimeout(update, 1000, 'World');
-    setTimeout(update, 2000, 'There');
+    document.body.append(div, rect);
   </script>
 </head>
 </html>
