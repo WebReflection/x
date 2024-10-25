@@ -11,6 +11,14 @@ export default document => {
   const { isArray } = Array;
   const attribute = Symbol();
   
+  let range$1;
+  const drop = (start, end) => {
+    if (!range$1) range$1 = document.createRange();
+    range$1.setStartBefore(start);
+    range$1.setEndAfter(end);
+    range$1.deleteContents();
+  };
+  
   const direct = Map => class extends Map {
     set(key, value) {
       super.set(key, value);
@@ -88,74 +96,51 @@ export default document => {
     static diff(node, op) {
       return node instanceof Fragment ?
         ((1 / op) < 0 ?
-          (op ? /* remove */ node.#remove(true) : /* after */ node.#lastChild) :
-          (op ? /* insert */ node.valueOf() : /* before */ node.#firstChild)) :
+          (op ? /* remove */ node.#remove(true) : /* after */ node.lastChild) :
+          (op ? /* insert */ node.valueOf() : /* before */ node.firstChild)) :
         node;
     }
   
     // privates
-    #firstChild;  // the virtual firstChild as reference
-    #lastChild;   // the virtual lastChild as reference
+    #childNodes;
   
     /**
      * Drop known nodes from their parents and optionally keep its lastChild in there
      * @param {boolean} keepLast
-     * @returns {ChildNode | void}
+     * @returns {ChildNode | null}
      */
     #remove(keepLast) {
-      let { childNodes } = this, lastChild;
-      if (keepLast) lastChild = childNodes.pop();
-      super.replaceChildren(...childNodes);
+      const childNodes = this.#childNodes;
+      let lastChild;
+      drop(
+        childNodes.at(0),
+        keepLast ? childNodes.at(-2) : (lastChild = childNodes.at(-1))
+      );
       return lastChild;
     }
   
     // public utilities and accessors
     /** @param {DocumentFragment} fragment */
-    constructor(fragment = document.createDocumentFragment()) {
+    constructor(fragment) {
       super(fragment);
-      this.#firstChild = super.firstChild;
-      this.#lastChild = super.lastChild;
-      if (!this.#firstChild) {
-        // only in this case create boundaries by default
-        // as empty fragment should never be the norm
-        // rather an edge case that has not much meaning in here
-        super.append(
-          this.#firstChild = document.createComment('<>'),
-          this.#lastChild = document.createComment('</>'),
-        );
-      }
+      this.#childNodes = [...super.childNodes];
     }
   
-    get firstChild() { return this.#firstChild; }
-    get lastChild() { return this.#lastChild; }
-    get parentNode() { return this.#lastChild.parentNode; }
-  
-    get childNodes() {
-      let firstChild = this.#firstChild;
-      const childNodes = [firstChild], lastChild = this.#lastChild;
-      while (firstChild != lastChild)
-        childNodes.push(firstChild = firstChild.nextSibling);
-      return childNodes;
-    }
+    get childNodes() { return this.#childNodes; }
+    get firstChild() { return this.#childNodes.at(0); }
+    get lastChild() { return this.#childNodes.at(-1); }
+    get parentNode() { return this.lastChild?.parentNode; }
   
     remove() { this.#remove(false); }
   
     /** @param {Node} node */
     replaceWith(node) {
-      const last = this.#remove(true);
-      const child = this.#lastChild;
-      // conflict with u/domdiff remove(true)
-      if (last !== child) super.appendChild(last);
-      // let it throw if child wasn't even connected
-      child.replaceWith(node);
+      this.#remove(true).replaceWith(node);
     }
   
     valueOf() {
-      const { parentNode } = this.#lastChild;
-      // fragment is not even connected
-      if (!parentNode) super.appendChild(this.#lastChild);
-      // fragment is being moved/appended elsewhere
-      else if (parentNode !== this) super.replaceChildren(...this.childNodes);
+      if (this.parentNode !== this)
+        super.replaceChildren(...this.#childNodes);
       return this;
     }
   }
@@ -767,7 +752,7 @@ export default document => {
     if (curr.length)
       prev = udomdiff(node.parentNode, prev, curr, diff, node);
     else if (prev !== empty) {
-      for (let { length } = prev; length--; prev[length].remove());
+      drop(prev.at(0), prev.at(-1));
       prev = empty;
     }
   };

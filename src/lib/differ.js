@@ -1,7 +1,7 @@
 import udomdiff from 'udomdiff';
 import empty from '@webreflection/empty/array';
 import Fragment from '../classes/fragment.js';
-import { diffOnce, isArray } from '../utils.js';
+import { drop, diffOnce, isArray } from '../utils.js';
 
 const { diff } = Fragment;
 
@@ -9,7 +9,7 @@ const array = (node, prev) => curr => {
   if (curr.length)
     prev = udomdiff(node.parentNode, prev, curr, diff, node);
   else if (prev !== empty) {
-    for (let { length } = prev; length--; prev[length].remove());
+    drop(prev.at(0), prev.at(-1));
     prev = empty;
   }
 };

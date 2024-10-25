@@ -2,6 +2,14 @@ const { isArray } = Array;
 const attribute = Symbol();
 export { isArray, attribute };
 
+let range;
+export const drop = (start, end) => {
+  if (!range) range = document.createRange();
+  range.setStartBefore(start);
+  range.setEndAfter(end);
+  range.deleteContents();
+};
+
 export const direct = Map => class extends Map {
   set(key, value) {
     super.set(key, value);
