@@ -21,15 +21,17 @@
   <script type="module">
     import { render, html, svg } from '../src/html.js';
 
-    console.time('div');
-    const div = html`<div style=${'border:1px solid black'} class=${'test'} aria=${{role: 'button'}} data=${{test: 123}} />`;
-    console.timeEnd('div');
+    render(document.body, () => html`${[html`a`, html`b`]}`);
 
-    console.time('rect');
-    const rect = svg`<rect style=${'border:1px solid black'} class=${'test'} aria=${{role: 'button'}} data=${{test: 123}} />`;
-    console.timeEnd('rect');
+    // console.time('div');
+    // const div = html`<div style=${'border:1px solid black'} class=${'test'} aria=${{role: 'button'}} data=${{test: 123}} />`;
+    // console.timeEnd('div');
 
-    document.body.append(div, rect);
+    // console.time('rect');
+    // const rect = svg`<rect style=${'border:1px solid black'} class=${'test'} aria=${{role: 'button'}} data=${{test: 123}} />`;
+    // console.timeEnd('rect');
+
+    // document.body.append(div, rect);
   </script>
 </head>
 </html>

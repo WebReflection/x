@@ -1,5 +1,6 @@
+import { COMMENT_NODE } from 'domconstants/constants';
+
 import native from 'custom-function/factory';
-import { drop } from '../utils.js';
 
 /** @extends {DocumentFragment} for real! */
 export default class Fragment extends native(DocumentFragment) {
@@ -7,26 +8,24 @@ export default class Fragment extends native(DocumentFragment) {
   static diff(node, op) {
     return node instanceof Fragment ?
       ((1 / op) < 0 ?
-        (op ? /* remove */ node.#remove(true) : /* after */ node.lastChild) :
-        (op ? /* insert */ node.valueOf() : /* before */ node.firstChild)) :
+        (op ? /* remove */ node.#remove(true) : /* after */ node.#lastChild) :
+        (op ? /* insert */ node.valueOf() : /* before */ node.#firstChild)) :
       node;
   }
 
   // privates
-  #childNodes;
+  #firstChild;  // the virtual firstChild as reference
+  #lastChild;   // the virtual lastChild as reference
 
   /**
    * Drop known nodes from their parents and optionally keep its lastChild in there
    * @param {boolean} keepLast
-   * @returns {ChildNode | null}
+   * @returns {ChildNode | void}
    */
   #remove(keepLast) {
-    const childNodes = this.#childNodes;
-    let lastChild;
-    drop(
-      childNodes.at(0),
-      keepLast ? childNodes.at(-2) : (lastChild = childNodes.at(-1))
-    );
+    let { childNodes } = this, lastChild;
+    if (keepLast) lastChild = childNodes.pop();
+    super.replaceChildren(...childNodes);
     return lastChild;
   }
 
@@ -34,24 +33,44 @@ export default class Fragment extends native(DocumentFragment) {
   /** @param {DocumentFragment} fragment */
   constructor(fragment) {
     super(fragment);
-    this.#childNodes = [...super.childNodes];
+    const firstChild = super.firstChild;
+    // empty html`` fragment or array as first node html`${[]}!`
+    this.#firstChild = !firstChild || firstChild.nodeType === COMMENT_NODE ?
+      super.insertBefore(document.createComment('<>'), firstChild) :
+      firstChild;
+    this.#lastChild = super.lastChild;
   }
 
-  get childNodes() { return this.#childNodes; }
-  get firstChild() { return this.#childNodes.at(0); }
-  get lastChild() { return this.#childNodes.at(-1); }
-  get parentNode() { return this.lastChild?.parentNode; }
+  get firstChild() { return this.#firstChild; }
+  get lastChild() { return this.#lastChild; }
+  get parentNode() { return this.#lastChild.parentNode; }
+
+  get childNodes() {
+    let firstChild = this.#firstChild;
+    const childNodes = [firstChild], lastChild = this.#lastChild;
+    while (firstChild != lastChild)
+      childNodes.push(firstChild = firstChild.nextSibling);
+    return childNodes;
+  }
 
   remove() { this.#remove(false); }
 
   /** @param {Node} node */
   replaceWith(node) {
-    this.#remove(true).replaceWith(node);
+    const last = this.#remove(true);
+    const child = this.#lastChild;
+    // conflict with u/domdiff remove(true)
+    if (last !== child) super.appendChild(last);
+    // let it throw if child wasn't even connected
+    child.replaceWith(node);
   }
 
   valueOf() {
-    if (this.parentNode !== this)
-      super.replaceChildren(...this.#childNodes);
+    const { parentNode } = this.#lastChild;
+    // fragment is not even connected
+    if (!parentNode) super.appendChild(this.#lastChild);
+    // fragment is being moved/appended elsewhere
+    else if (parentNode !== this) super.replaceChildren(...this.childNodes);
     return this;
   }
 }

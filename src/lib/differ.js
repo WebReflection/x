@@ -1,7 +1,7 @@
 import udomdiff from 'udomdiff';
 import empty from '@webreflection/empty/array';
 import Fragment from '../classes/fragment.js';
-import { drop, diffOnce, isArray } from '../utils.js';
+import { drop, isArray } from '../utils.js';
 
 const { diff } = Fragment;
 
@@ -49,4 +49,21 @@ const multi = node => {
   };
 };
 
-export default (node, once) => (once ? diffOnce : multi)(node);
+const oneOff = node => value => {
+  if (value && typeof value === 'object') {
+    if (isArray(value)) {
+      const f = document.createDocumentFragment();
+      f.replaceChildren(...value.map(v => v.valueOf()));
+      value = f;
+    }
+  }
+  else {
+    const nullish = value == null;
+    value = nullish || typeof value !== 'object' ?
+      document.createTextNode(nullish ? '' : value) :
+      value;
+  }
+  node.replaceWith(value.valueOf());
+};
+
+export default (node, once) => (once ? oneOff : multi)(node);

@@ -1,9 +1,13 @@
+import { COMMENT_NODE } from 'domconstants/constants';
+
 const getContent = fragment => {
   const { firstChild: $ } = fragment;
-  return $ && $ === fragment.lastChild ? fragment.removeChild($) : fragment;
+  // empty html`` fragments or html`${[]}` cases
+  return $ && $ === fragment.lastChild && $.nodeType !== COMMENT_NODE ?
+    fragment.removeChild($) : fragment;
 };
 
-let template = document.createElement('template')
+let template = document.createElement('template');
 
 /** @type {(text:string) => DocumentFragment | HTMLElement | Node} */
 export const html = text => {
