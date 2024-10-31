@@ -70,13 +70,15 @@ export default document => {
   const handleListener = (node, type) => {
     let prev = empty;
     return value => {
-      const curr = value ? (isArray(value) ? value : [value]) : empty;
-      const different = curr[0] != prev[0];
-      if (different && prev[0])
-        node.removeEventListener(type, ...prev);
-      if (different)
-        node.addEventListener(type, ...curr);
-      prev = curr;
+      if (value !== prev || (prev !== empty && value !== prev[0])) {
+        const curr = value ? (isArray(value) ? value : [value]) : empty;
+        const different = curr[0] != prev[0];
+        if (different && prev[0])
+          node.removeEventListener(type, ...prev);
+        if (different)
+          node.addEventListener(type, ...curr);
+        prev = curr;
+      }
     };
   };
   
