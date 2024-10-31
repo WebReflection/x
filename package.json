@@ -1,6 +1,6 @@
 {
   "name": "@webreflection/x",
-  "version": "0.2.11",
+  "version": "0.2.12",
   "type": "module",
   "unpkg": "./x.js",
   "main": "./src/html.js",
