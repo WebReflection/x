@@ -11,7 +11,7 @@ import Info from './info.js';
 export default class Node {
   /**
    * @param {1 | 3 | 8 | 11} type
-   * @param {Element | Text | Comment | DocumentFragment} node
+   * @param {import("../types.js").GenericNode} node
    * @param {import("../types.js").Path[]} paths
    */
   constructor(type, node, paths) {

@@ -1,6 +1,10 @@
+import Hole from './classes/hole.js';
+
 const { isArray } = Array;
 const attribute = Symbol();
 export { isArray, attribute };
+
+export const isHole = value => value instanceof Hole;
 
 export const isObject = value => value && typeof value === 'object';
 
@@ -30,13 +34,10 @@ const empty = [null];
 export const handleListener = (node, type) => {
   let prev = empty;
   return value => {
-    if (prev !== empty && value !== prev[0]) {
-      const curr = value ? (isArray(value) ? value : [value]) : empty;
-      const different = curr[0] != prev[0];
-      if (different && prev[0])
-        node.removeEventListener(type, ...prev);
-      if (different)
-        node.addEventListener(type, ...curr);
+    const curr = value ? (isArray(value) ? value : [value]) : empty;
+    if (curr[0] != prev[0]) {
+      if (prev[0]) node.removeEventListener(type, ...prev);
+      if (curr[0]) node.addEventListener(type, ...curr);
       prev = curr;
     }
   };

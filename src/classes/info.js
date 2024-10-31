@@ -1,6 +1,6 @@
 export default class Info {
   /**
-   * @param {import("./node.js").Node} node
+   * @param {import("../types.js").GenericNode} node
    * @param {((value:unknown) => void)[]} updates
    */
   constructor(node, updates) {
@@ -10,7 +10,7 @@ export default class Info {
 
   /**
    * @param {unknown[]} values
-   * @returns {this}
+   * @returns {import("../types.js").GenericNode}
    */
   update(values) {
     const { updates } = this;

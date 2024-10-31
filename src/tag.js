@@ -4,15 +4,34 @@ import {
   ELEMENT_NODE
 } from 'domconstants/constants';
 
+import Hole from './classes/hole.js';
 import Stack from './classes/stack.js';
 
 import { direct, attribute } from './utils.js';
 import parser from './parser.js';
 
+/**
+ * @param {import("./types.js").Node} node
+ * @param {import("./types.js").Update} update
+ * @param {unknown[]} values
+ * @returns {import("./types.js").ParsedNode}
+ */
+const once = (node, update, values) => node.create(update, true).update(values);
+
+/**
+ * @param {import("./types.js").Node} node
+ * @param {import("./types.js").Update} update
+ * @param {unknown[]} values
+ * @returns {import("./types.js").Hole}
+ */
+const many = (node, update, values) => new Hole(node, update, values);
+
 const DirectWeakMap = direct(WeakMap);
 
-let rendering = null;
 const dwm = new DirectWeakMap;
+
+let rendering = null;
+
 /**
  * @param {ParentNode} where
  * @param {() => import("../types.js").ParsedNode} what
@@ -27,20 +46,12 @@ export const render = (where, what) => {
 };
 
 /**
- * @param {import("./types.js").Node} node
- * @param {import("./types.js").Update} update
- * @param {unknown[]} values
- * @returns {import("./types.js").ParsedNode}
- */
-const one = (node, update, values) => node.create(update, true).update(values);
-
-/**
  * @param {boolean} SVG
  * @param {unknown} attr
  * @param {unknown} diff
  * @returns {import("./types.js").ParsedNode}
  */
-export const tag = (SVG, attr, diff) => {
+export const tag = (SVG, attr, diff, text) => {
   const dwm = new DirectWeakMap;
   const parse = parser(SVG);
   const update = {
@@ -49,16 +60,14 @@ export const tag = (SVG, attr, diff) => {
       return attr[k](node, c === k ? name.slice(1) : name, once, SVG);
     },
     [COMMENT_NODE]: (node, once) => diff(node, once, SVG),
-    [ELEMENT_NODE]: node => value => {
-      node.textContent = value == null ? '' : value;
-    },
+    [ELEMENT_NODE]: text,
   };
 
   /**
    * @param {TemplateStringsArray | string[]} template
    * @param {...unknown} values
    */
-  return (template, ...values) => (rendering?.parse || one)(
+  return (template, ...values) => (rendering === null ? once : many)(
     dwm.get(template) || dwm.set(template, parse(template)),
     update,
     values,

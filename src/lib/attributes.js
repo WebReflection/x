@@ -19,7 +19,7 @@ const setStyle = (style, _, value) => {
 const storeValueFor = (callback, node, name) => {
   let prev;
   return curr => {
-    if (curr != prev) {
+    if (prev != curr) {
       prev = curr;
       callback(node, name, curr);
     }

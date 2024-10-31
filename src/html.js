@@ -3,7 +3,8 @@ export { render };
 
 import attrs from './lib/attributes.js';
 import differ from './lib/differ.js';
-export const html = tag(false, attrs, differ);
-export const svg = tag(true, attrs, differ);
+import text from './lib/text.js';
+export const html = tag(false, attrs, differ, text);
+export const svg = tag(true, attrs, differ, text);
 
 export const component = callback => (...args) => () => callback(...args);

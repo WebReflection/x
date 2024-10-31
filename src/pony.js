@@ -8,11 +8,12 @@ export default document => {
   const COMMENT_NODE = 8;
   const DOCUMENT_FRAGMENT_NODE = 11;
   
-  var freeze = Object.freeze;
-  
-  var empty$1 = freeze([]);
-  
   class Hole {
+    /**
+     * @param {import("../types.js").Node} node
+     * @param {import("../types.js").Update} update
+     * @param {unknown[]} values
+     */
     constructor(node, update, values) {
       this.node = node;
       this.update = update;
@@ -20,27 +21,14 @@ export default document => {
     }
   }
   
-  class Live {
-    /**
-     * @param {import("../types.js").Node} node
-     * @param {import("../types.js").Update} update
-     */
-    constructor(node, update) {
-      this.node = node;
-      this.info = node.create(update, false);
-    }
+  var freeze = Object.freeze;
   
-    /**
-     * @param {unknown[]} values
-     * @returns {import("../types.js").ParsedNode}
-     */
-    update(values) {
-      return this.info.update(values);
-    }
-  }
+  var empty$1 = freeze([]);
   
   const { isArray } = Array;
   const attribute = Symbol();
+  
+  const isHole = value => value instanceof Hole;
   
   const isObject = value => value && typeof value === 'object';
   
@@ -70,13 +58,10 @@ export default document => {
   const handleListener = (node, type) => {
     let prev = empty;
     return value => {
-      if (prev !== empty && value !== prev[0]) {
-        const curr = value ? (isArray(value) ? value : [value]) : empty;
-        const different = curr[0] != prev[0];
-        if (different && prev[0])
-          node.removeEventListener(type, ...prev);
-        if (different)
-          node.addEventListener(type, ...curr);
+      const curr = value ? (isArray(value) ? value : [value]) : empty;
+      if (curr[0] != prev[0]) {
+        if (prev[0]) node.removeEventListener(type, ...prev);
+        if (curr[0]) node.addEventListener(type, ...curr);
         prev = curr;
       }
     };
@@ -90,33 +75,44 @@ export default document => {
   
   const type = value => {
     if (isObject(value)) {
-      if (value instanceof Hole) return HOLE;
-      if (isArray(value)) return ARRAY;
+      if (isHole(value)) return HOLE;
+      // disambiguate between listeners as array and holes as nodes
+      if (isArray(value)) return value.length && !isHole(value[0]) ? ANY : ARRAY;
       return OBJECT;
     }
     return ANY;
   };
   
+  /**
+   * @param {ANY | ARRAY | HOLE | OBJECT} type 
+   * @returns {Stack}
+   */
+  const create = type => {
+    const stack = new Stack(type);
+    if (type === ARRAY) stack.cache = [];
+    return stack;
+  };
+  
+  /**
+   * @param {unknown[]} values
+   * @param {Stack[]} cache
+   * @returns {unknown[]}
+   */
   const unroll = (values, cache) => {
     const { length } = values;
+    if (length < cache.length) cache.splice(length);
     for (let i = 0; i < length; i++) {
       const curr = values[i];
-      const prev = cache[i] || (cache[i] = new Stack(type(curr)));
+      const prev = cache[i] || (cache[i] = create(type(curr)));
       switch (prev.type) {
         case HOLE: {
-          const replaceChildren = prev.as(curr);
+          const different = prev.as(curr);
           const value = prev.value.update(unroll(curr.values, prev.cache));
-          values[i] = replaceChildren ? value.valueOf() : value;
+          values[i] = different ? value.valueOf() : value;
           break;
         }
         case ARRAY: {
-          if (prev.value === null && curr.length) {
-            const value = type(curr[0]) === HOLE ? HOLE : ANY;
-            prev.value = value;
-            if (value === HOLE) prev.cache = [];
-          }
-          if (prev.value === HOLE)
-            values[i] = unroll(curr, prev.cache);
+          values[i] = unroll(curr, prev.cache);
           break;
         }
         case OBJECT: {
@@ -128,37 +124,52 @@ export default document => {
         }
       }
     }
-    if (length < cache.length) cache.splice(length);
     return values;
   };
   
+  /**
+   * @typedef {Object} ReplaceChildren
+   * @prop {(node:Node) => void} replaceChildren
+   */
+  
   class Stack {
     /**
-     * @param {0 | 1 | 2 | 3 | 4} type
+     * @param {STACK | ANY | ARRAY | HOLE | OBJECT} type
      */
     constructor(type = STACK) {
-      /** @type {0 | 1 | 2 | 3 | 4} */
       this.type = type;
-      /** @type {unknown} */
+      /** @type {import("../types.js").ParsedNode?} */
+      this.node = null;
+      /** @type {import("../types.js").Info | import("../types.js").GenericNode | null} */
       this.value = null;
-      /** @type {unknown[]} */
+      /** @type {Stack[]} */
       this.cache = empty$1;
     }
-    parse(node, update, values) {
-      return new Hole(node, update, values);
-    }
+  
+    /**
+     * @param {import("../types.js").Hole} hole
+     * @returns {boolean}
+     */
     as({ node, update, values }) {
-      if (this.value?.node !== node) {
-        this.value = new Live(node, update);
+      const different = this.node !== node;
+      if (different) {
+        this.node = node;
+        this.value = node.create(update, false);
         this.cache = values.length ? [] : empty$1;
-        return true;
       }
-      return false;
+      return different;
     }
+  
+    /**
+     * @param {Element | DocumentFragment | ReplaceChildren} where
+     * @param {import("../types.js").Hole} what
+     */
     update(where, what) {
-      const replaceChildren = this.as(what);
-      const value = this.value.update(unroll(what.values, this.cache));
-      if (replaceChildren) where.replaceChildren(value.valueOf());
+      const different = this.as(what);
+      /** @type {import("../types.js").Info} */
+      const value = this.value;
+      const node = value.update(unroll(what.values, this.cache));
+      if (different) where.replaceChildren(node.valueOf());
     }
   }
   
@@ -260,7 +271,7 @@ export default document => {
   
   class Info {
     /**
-     * @param {import("./node.js").Node} node
+     * @param {import("../types.js").GenericNode} node
      * @param {((value:unknown) => void)[]} updates
      */
     constructor(node, updates) {
@@ -270,7 +281,7 @@ export default document => {
   
     /**
      * @param {unknown[]} values
-     * @returns {this}
+     * @returns {import("../types.js").GenericNode}
      */
     update(values) {
       const { updates } = this;
@@ -283,7 +294,7 @@ export default document => {
   class Node {
     /**
      * @param {1 | 3 | 8 | 11} type
-     * @param {Element | Text | Comment | DocumentFragment} node
+     * @param {import("../types.js").GenericNode} node
      * @param {import("../types.js").Path[]} paths
      */
     constructor(type, node, paths) {
@@ -523,10 +534,28 @@ export default document => {
     };
   };
   
+  /**
+   * @param {import("./types.js").Node} node
+   * @param {import("./types.js").Update} update
+   * @param {unknown[]} values
+   * @returns {import("./types.js").ParsedNode}
+   */
+  const once = (node, update, values) => node.create(update, true).update(values);
+  
+  /**
+   * @param {import("./types.js").Node} node
+   * @param {import("./types.js").Update} update
+   * @param {unknown[]} values
+   * @returns {import("./types.js").Hole}
+   */
+  const many = (node, update, values) => new Hole(node, update, values);
+  
   const DirectWeakMap = direct(WeakMap);
   
-  let rendering = null;
   const dwm = new DirectWeakMap;
+  
+  let rendering = null;
+  
   /**
    * @param {ParentNode} where
    * @param {() => import("../types.js").ParsedNode} what
@@ -541,20 +570,12 @@ export default document => {
   };
   
   /**
-   * @param {import("./types.js").Node} node
-   * @param {import("./types.js").Update} update
-   * @param {unknown[]} values
-   * @returns {import("./types.js").ParsedNode}
-   */
-  const one = (node, update, values) => node.create(update, true).update(values);
-  
-  /**
    * @param {boolean} SVG
    * @param {unknown} attr
    * @param {unknown} diff
    * @returns {import("./types.js").ParsedNode}
    */
-  const tag = (SVG, attr, diff) => {
+  const tag = (SVG, attr, diff, text) => {
     const dwm = new DirectWeakMap;
     const parse = parser(SVG);
     const update = {
@@ -563,16 +584,14 @@ export default document => {
         return attr[k](node, c === k ? name.slice(1) : name, once, SVG);
       },
       [COMMENT_NODE]: (node, once) => diff(node, once, SVG),
-      [ELEMENT_NODE]: node => value => {
-        node.textContent = value == null ? '' : value;
-      },
+      [ELEMENT_NODE]: text,
     };
   
     /**
      * @param {TemplateStringsArray | string[]} template
      * @param {...unknown} values
      */
-    return (template, ...values) => (rendering?.parse || one)(
+    return (template, ...values) => (rendering === null ? once : many)(
       dwm.get(template) || dwm.set(template, parse(template)),
       update,
       values,
@@ -590,7 +609,7 @@ export default document => {
   const storeValueFor = (callback, node, name) => {
     let prev;
     return curr => {
-      if (curr != prev) {
+      if (prev != curr) {
         prev = curr;
         callback(node, name, curr);
       }
@@ -833,7 +852,7 @@ export default document => {
     }
   };
   
-  const multi = node => {
+  const multi$1 = node => {
     let init = true;
     let update;
     return value => {
@@ -860,7 +879,7 @@ export default document => {
     };
   };
   
-  const oneOff = node => value => {
+  const oneOff$1 = node => value => {
     if (isObject(isObject)) {
       if (isArray(value)) {
         const f = document.createDocumentFragment();
@@ -875,10 +894,28 @@ export default document => {
     node.replaceWith(value);
   };
   
-  var differ = (node, once) => (once ? oneOff : multi)(node);
+  var differ = (node, once) => (once ? oneOff$1 : multi$1)(node);
   
-  const html = tag(false, attrs, differ);
-  const svg = tag(true, attrs, differ);
+  const setContent = (node, value) => {
+    node.textContent = value == null ? '' : value;
+  };
+  
+  const multi = node => {
+    let prev;
+    return curr => {
+      if (prev != curr) {
+        prev = curr;
+        setContent(node, curr);
+      }
+    };
+  };
+  
+  const oneOff = node => value => setContent(node, value);
+  
+  var text = (node, once) => (once ? oneOff : multi)(node);
+  
+  const html = tag(false, attrs, differ, text);
+  const svg = tag(true, attrs, differ, text);
   
   const component = callback => (...args) => () => callback(...args);
   
