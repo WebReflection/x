@@ -3,7 +3,7 @@ import empty from '@webreflection/empty/array';
 import Hole from './hole.js';
 import Live from './live.js';
 
-import { isArray } from '../utils.js';
+import { isArray, isObject } from '../utils.js';
 
 const STACK = 0;
 const ANY = 1;
@@ -12,7 +12,7 @@ const HOLE = 3;
 const OBJECT = 4;
 
 const type = value => {
-  if (typeof value === 'object' && value) {
+  if (isObject(value)) {
     if (value instanceof Hole) return HOLE;
     if (isArray(value)) return ARRAY;
     return OBJECT;

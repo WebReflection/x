@@ -42,13 +42,7 @@ export default document => {
   const { isArray } = Array;
   const attribute = Symbol();
   
-  let range$1;
-  const drop = (start, end) => {
-    if (!range$1) range$1 = document.createRange();
-    range$1.setStartBefore(start);
-    range$1.setEndAfter(end);
-    range$1.deleteContents();
-  };
+  const isObject = value => value && typeof value === 'object';
   
   const direct = Map => class extends Map {
     set(key, value) {
@@ -93,7 +87,7 @@ export default document => {
   const OBJECT = 4;
   
   const type = value => {
-    if (typeof value === 'object' && value) {
+    if (isObject(value)) {
       if (value instanceof Hole) return HOLE;
       if (isArray(value)) return ARRAY;
       return OBJECT;
@@ -821,12 +815,13 @@ export default document => {
   const { diff } = Fragment;
   
   const array = (node, prev) => curr => {
-    if (curr.length)
-      prev = udomdiff(node.parentNode, prev, curr, diff, node);
-    else if (prev !== empty$1) {
-      drop(prev.at(0), prev.at(-1));
-      prev = empty$1;
-    }
+    prev = udomdiff(
+      node.parentNode,
+      prev,
+      curr.length ? curr : empty$1,
+      diff,
+      node
+    );
   };
   
   const dom = prev => curr => {
@@ -843,7 +838,7 @@ export default document => {
     return value => {
       if (init) {
         init = false;
-        if (value && typeof value === 'object') {
+        if (isObject(value)) {
           if (isArray(value)) update = array(node, empty$1);
           else update = dom(node);
         }
@@ -865,20 +860,18 @@ export default document => {
   };
   
   const oneOff = node => value => {
-    if (value && typeof value === 'object') {
+    if (isObject(isObject)) {
       if (isArray(value)) {
         const f = document.createDocumentFragment();
         f.replaceChildren(...value.map(v => v.valueOf()));
         value = f;
       }
+      else value = value.valueOf();
     }
     else {
-      const nullish = value == null;
-      value = nullish || typeof value !== 'object' ?
-        document.createTextNode(nullish ? '' : value) :
-        value;
+      value = document.createTextNode(value == null ? '' : value);
     }
-    node.replaceWith(value.valueOf());
+    node.replaceWith(value);
   };
   
   var differ = (node, once) => (once ? oneOff : multi)(node);

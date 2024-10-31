@@ -1,17 +1,18 @@
 import udomdiff from 'udomdiff';
 import empty from '@webreflection/empty/array';
 import Fragment from '../classes/fragment.js';
-import { drop, isArray } from '../utils.js';
+import { isArray, isObject } from '../utils.js';
 
 const { diff } = Fragment;
 
 const array = (node, prev) => curr => {
-  if (curr.length)
-    prev = udomdiff(node.parentNode, prev, curr, diff, node);
-  else if (prev !== empty) {
-    drop(prev.at(0), prev.at(-1));
-    prev = empty;
-  }
+  prev = udomdiff(
+    node.parentNode,
+    prev,
+    curr.length ? curr : empty,
+    diff,
+    node
+  );
 };
 
 const dom = prev => curr => {
@@ -28,7 +29,7 @@ const multi = node => {
   return value => {
     if (init) {
       init = false;
-      if (value && typeof value === 'object') {
+      if (isObject(value)) {
         if (isArray(value)) update = array(node, empty);
         else update = dom(node);
       }
@@ -50,20 +51,18 @@ const multi = node => {
 };
 
 const oneOff = node => value => {
-  if (value && typeof value === 'object') {
+  if (isObject(isObject)) {
     if (isArray(value)) {
       const f = document.createDocumentFragment();
       f.replaceChildren(...value.map(v => v.valueOf()));
       value = f;
     }
+    else value = value.valueOf();
   }
   else {
-    const nullish = value == null;
-    value = nullish || typeof value !== 'object' ?
-      document.createTextNode(nullish ? '' : value) :
-      value;
+    value = document.createTextNode(value == null ? '' : value);
   }
-  node.replaceWith(value.valueOf());
+  node.replaceWith(value);
 };
 
 export default (node, once) => (once ? oneOff : multi)(node);
