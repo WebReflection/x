@@ -36,8 +36,7 @@ export default class Node {
       if (path !== empty && path !== prevPath) {
         prevPath = path;
         node = dom;
-        for (let { length } = path, i = 0; i < length; i++)
-          node = node.childNodes[path[i]];
+        for (let { length: i } = path; i--; node = node.childNodes[path[i]]);
       }
       updates[i] = type === ATTRIBUTE_NODE ?
         update[ATTRIBUTE_NODE](node, name, once) :

@@ -306,8 +306,7 @@ export default document => {
         if (path !== empty$1 && path !== prevPath) {
           prevPath = path;
           node = dom;
-          for (let { length } = path, i = 0; i < length; i++)
-            node = node.childNodes[path[i]];
+          for (let { length: i } = path; i--; node = node.childNodes[path[i]]);
         }
         updates[i] = type === ATTRIBUTE_NODE ?
           update[ATTRIBUTE_NODE](node, name, once) :
@@ -452,7 +451,7 @@ export default document => {
       i = path.push(indexOf.call(parentNode.childNodes, node));
       node = parentNode;
     }
-    return i < 2 ? (i ? path : empty$1) : path.reverse();
+    return i < 1 ? empty$1 : path;
   };
   
   /**

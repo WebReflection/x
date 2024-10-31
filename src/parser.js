@@ -11,7 +11,7 @@ import Node from './classes/node.js';
 import Keyed from './classes/keyed.js';
 import Path from './classes/path.js';
 
-import { html, svg } from './create.js'; // 'create-contextual-content';
+import { html, svg } from './create.js';
 import empty from '@webreflection/empty/array';
 import parser from '@webreflection/uparser';
 
@@ -31,7 +31,7 @@ const map = node => {
     i = path.push(indexOf.call(parentNode.childNodes, node));
     node = parentNode;
   }
-  return i < 2 ? (i ? path : empty) : path.reverse();
+  return i < 1 ? empty : path;
 };
 
 /**
