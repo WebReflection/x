@@ -1,6 +1,6 @@
 import Live from './classes/live.js';
 
-export default (init, i, live) => ({
+export default stack => ({
   /**
    * @param {import("./types.js").ParsedNode} node
    * @param {import("./types.js").Update} update

@@ -4,9 +4,10 @@ import {
   ELEMENT_NODE
 } from 'domconstants/constants';
 
+import Stack from './classes/stack.js';
+
 import { direct, attribute } from './utils.js';
 import parser from './parser.js';
-import loop from './loop.js';
 
 const DirectWeakMap = direct(WeakMap);
 
@@ -19,7 +20,7 @@ const dwm = new DirectWeakMap;
  */
 export const render = (where, what) => {
   const prev = rendering;
-  rendering = dwm.get(where) || dwm.set(where, loop(true, 0, []));
+  rendering = dwm.get(where) || dwm.set(where, new Stack);
   try { rendering.update(where, what()) }
   finally { rendering = prev }
   return where;
