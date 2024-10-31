@@ -12,7 +12,7 @@ const HOLE = 3;
 const OBJECT = 4;
 
 const type = value => {
-  if (typeof value === OBJECT && value) {
+  if (typeof value === 'object' && value) {
     if (value instanceof Hole) return HOLE;
     if (isArray(value)) return ARRAY;
     return OBJECT;
