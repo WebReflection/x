@@ -1,10 +1,7 @@
 /** @typedef {import("./classes/fragment.js").default} Fragment */
 /** @typedef {import("./classes/hole.js").default} Hole */
-/** @typedef {import("./classes/info.js").default} Info */
 /** @typedef {import("./classes/keyed.js").default} Keyed */
-/** @typedef {import("./classes/lazy.js").default} Lazy */
 /** @typedef {import("./classes/node.js").default} Node */
-/** @typedef {import("./classes/path.js").default} Path */
 /** @typedef {import("./classes/stack.js").default} Stack */
 
 /** @typedef {string} AttributeName */
@@ -16,11 +13,7 @@
 /**
  * @param {Fragment} Fragment
  * @param {Hole} Hole
- * @param {Info} Info
  * @param {Keyed} Keyed
- * @param {Lazy} Lazy
- * @param {Node} Node
- * @param {Path} Path
  * @param {Stack} Stack
  * @param {AttributeName} AttributeName
  * @param {GenericNode} GenericNode
@@ -30,11 +23,8 @@
 export default (
   Fragment,
   Hole,
-  Info,
   Keyed,
-  Lazy,
   Node,
-  Path,
   Stack,
   AttributeName,
   GenericNode,
@@ -43,11 +33,8 @@ export default (
 ) => [
   Fragment,
   Hole,
-  Info,
   Keyed,
-  Lazy,
   Node,
-  Path,
   Stack,
   AttributeName,
   GenericNode,

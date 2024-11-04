@@ -9,13 +9,10 @@ const HOLE = 3;
 const OBJECT = 4;
 
 const type = value => {
-  if (isObject(value)) {
-    if (isHole(value)) return HOLE;
-    // disambiguate between listeners as array and holes as nodes
-    if (isArray(value)) return value.length && !isHole(value[0]) ? ANY : ARRAY;
-    return OBJECT;
-  }
-  return ANY;
+  if (isHole(value)) return HOLE;
+  // disambiguate between listeners as array and holes as nodes
+  if (isArray(value)) return value.length && !isHole(value[0]) ? ANY : ARRAY;
+  return isObject(value) ? OBJECT : ANY;
 };
 
 /**
@@ -33,7 +30,7 @@ const create = type => {
  * @param {Stack[]} cache
  * @returns {unknown[]}
  */
-const unroll = (values, cache) => {
+const unroll = (values, { cache }) => {
   const { length } = values;
   if (length < cache.length) cache.splice(length);
   for (let i = 0; i < length; i++) {
@@ -42,12 +39,12 @@ const unroll = (values, cache) => {
     switch (prev.type) {
       case HOLE: {
         const different = prev.as(curr);
-        const value = prev.value.update(unroll(curr.values, prev.cache));
+        const value = prev.value.update(unroll(curr.values, prev));
         values[i] = different ? value.valueOf() : value;
         break;
       }
       case ARRAY: {
-        values[i] = unroll(curr, prev.cache);
+        values[i] = unroll(curr, prev);
         break;
       }
       case OBJECT: {
@@ -103,7 +100,7 @@ export default class Stack {
     const different = this.as(what);
     /** @type {import("../types.js").Info} */
     const value = this.value;
-    const node = value.update(unroll(what.values, this.cache));
+    const node = value.update(unroll(what.values, this));
     if (different) where.replaceChildren(node.valueOf());
   }
 }

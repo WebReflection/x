@@ -6,7 +6,6 @@ import {
 import empty from '@webreflection/empty/array';
 
 import Fragment from './fragment.js';
-import Info from './info.js';
 
 export default class Node {
   /**
@@ -29,7 +28,7 @@ export default class Node {
     const { type, node, paths } = this;
     const { length } = paths;
     const updates = length ? [] : empty;
-    const dom = document.importNode(node, true);
+    let dom = document.importNode(node, true);
     for (let prevPath, node = dom, i = 0; i < length; i++) {
       const { type, name, path } = paths[i];
       // speed up multiple attributes per same node
@@ -42,9 +41,12 @@ export default class Node {
         update[ATTRIBUTE_NODE](node, name, once) :
         update[type](node, once);
     }
-    return new Info(
-      type === DOCUMENT_FRAGMENT_NODE ? new Fragment(dom) : dom,
-      updates,
-    );
+    dom = type === DOCUMENT_FRAGMENT_NODE ? new Fragment(dom) : dom;
+    return {
+      update: values => {
+        for (let i = 0; i < length; i++) updates[i](values[i]);
+        return dom;
+      },
+    };
   }
 }

@@ -74,13 +74,10 @@ export default document => {
   const OBJECT = 4;
   
   const type = value => {
-    if (isObject(value)) {
-      if (isHole(value)) return HOLE;
-      // disambiguate between listeners as array and holes as nodes
-      if (isArray(value)) return value.length && !isHole(value[0]) ? ANY : ARRAY;
-      return OBJECT;
-    }
-    return ANY;
+    if (isHole(value)) return HOLE;
+    // disambiguate between listeners as array and holes as nodes
+    if (isArray(value)) return value.length && !isHole(value[0]) ? ANY : ARRAY;
+    return isObject(value) ? OBJECT : ANY;
   };
   
   /**
@@ -98,7 +95,7 @@ export default document => {
    * @param {Stack[]} cache
    * @returns {unknown[]}
    */
-  const unroll = (values, cache) => {
+  const unroll = (values, { cache }) => {
     const { length } = values;
     if (length < cache.length) cache.splice(length);
     for (let i = 0; i < length; i++) {
@@ -107,12 +104,12 @@ export default document => {
       switch (prev.type) {
         case HOLE: {
           const different = prev.as(curr);
-          const value = prev.value.update(unroll(curr.values, prev.cache));
+          const value = prev.value.update(unroll(curr.values, prev));
           values[i] = different ? value.valueOf() : value;
           break;
         }
         case ARRAY: {
-          values[i] = unroll(curr, prev.cache);
+          values[i] = unroll(curr, prev);
           break;
         }
         case OBJECT: {
@@ -168,7 +165,7 @@ export default document => {
       const different = this.as(what);
       /** @type {import("../types.js").Info} */
       const value = this.value;
-      const node = value.update(unroll(what.values, this.cache));
+      const node = value.update(unroll(what.values, this));
       if (different) where.replaceChildren(node.valueOf());
     }
   }
@@ -269,28 +266,6 @@ export default document => {
     }
   }
   
-  class Info {
-    /**
-     * @param {import("../types.js").GenericNode} node
-     * @param {((value:unknown) => void)[]} updates
-     */
-    constructor(node, updates) {
-      this.node = node;
-      this.updates = updates;
-    }
-  
-    /**
-     * @param {unknown[]} values
-     * @returns {import("../types.js").GenericNode}
-     */
-    update(values) {
-      const { updates } = this;
-      for (let { length } = updates, i = 0; i < length; i++)
-        updates[i](values[i]);
-      return this.node;
-    }
-  }
-  
   class Node {
     /**
      * @param {1 | 3 | 8 | 11} type
@@ -312,7 +287,7 @@ export default document => {
       const { type, node, paths } = this;
       const { length } = paths;
       const updates = length ? [] : empty$1;
-      const dom = document.importNode(node, true);
+      let dom = document.importNode(node, true);
       for (let prevPath, node = dom, i = 0; i < length; i++) {
         const { type, name, path } = paths[i];
         // speed up multiple attributes per same node
@@ -325,29 +300,13 @@ export default document => {
           update[ATTRIBUTE_NODE](node, name, once) :
           update[type](node, once);
       }
-      return new Info(
-        type === DOCUMENT_FRAGMENT_NODE ? new Fragment(dom) : dom,
-        updates,
-      );
-    }
-  }
-  
-  class Lazy {
-    constructor(key, map, create) {
-      this.key = key;
-      this.map = map;
-      this.create = create;
-    }
-  
-    /**
-     * @param {unknown[]} values
-     * @returns {import("../types.js").ParsedNode}
-     */
-    update(values) {
-      const { key, map, create } = this;
-      const value = values[key];
-      const info = map.get(value) || map.set(value, create());
-      return info.update(values);
+      dom = type === DOCUMENT_FRAGMENT_NODE ? new Fragment(dom) : dom;
+      return {
+        update: values => {
+          for (let i = 0; i < length; i++) updates[i](values[i]);
+          return dom;
+        },
+      };
     }
   }
   
@@ -360,21 +319,16 @@ export default document => {
       this.map = new DirectMap;
     }
     create(update, once) {
-      const { key, map } = this;
-      return new Lazy(key, map, () => super.create(update, once));
-    }
-  }
-  
-  class Path {
-    /**
-     * @param {1 | 2 | 8} type the node type at that path
-     * @param {'#comment' | '#text' | import("../types.js").AttributeName} name either `#comment`, `#text` or the attribute's name
-     * @param {number[]} path a list of indexes from the top parent node to retrieve either the attribute element owner, or the node
-     */
-    constructor(type, name, path) {
-      this.type = type;
-      this.name = name;
-      this.path = path;
+      return {
+        update: values => {
+          const { key, map } = this;
+          const value = values[key];
+          const info = map.get(value) || map.set(
+            value, super.create(update, once)
+          );
+          return info.update(values);
+        },
+      };
     }
   }
   
@@ -468,6 +422,14 @@ export default document => {
   };
   
   /**
+   * @param {1 | 2 | 8} type the node type at that path
+   * @param {'#comment' | '#text' | import("../types.js").AttributeName} name either `#comment`, `#text` or the attribute's name
+   * @param {number[]} path a list of indexes from the top parent node to retrieve either the attribute element owner, or the node
+   * @returns 
+   */
+  const info = (type, name, path) => ({ type, name, path });
+  
+  /**
    * @param {boolean} SVG
    * @param {Node} node
    * @param {number[]} paths
@@ -479,7 +441,7 @@ export default document => {
       case COMMENT_NODE: {
         // holes
         if (node.data === prefix + i) {
-          paths.push(new Path(COMMENT_NODE, '#comment', map(node)));
+          paths.push(info(COMMENT_NODE, '#comment', map(node)));
           i++;
         }
         break;
@@ -490,7 +452,7 @@ export default document => {
         while (node.hasAttribute(search = prefix + i)) {
           const name = node.getAttribute(search);
           if (name === 'key') key = paths.length;
-          paths.push(new Path(ATTRIBUTE_NODE, name, path || (path = map(node))));
+          paths.push(info(ATTRIBUTE_NODE, name, path || (path = map(node))));
           node.removeAttribute(search);
           i++;
         }
@@ -500,7 +462,7 @@ export default document => {
           TEXT_ELEMENTS.test(node.localName) &&
           node.textContent.trim() === `<!--${search}-->`
         ) {
-          paths.push(new Path(ELEMENT_NODE, '#text', path || map(node)));
+          paths.push(info(ELEMENT_NODE, '#text', path || map(node)));
           i++;
         }
         break;

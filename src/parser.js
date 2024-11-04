@@ -9,7 +9,6 @@ import { TEXT_ELEMENTS } from 'domconstants/re';
 
 import Node from './classes/node.js';
 import Keyed from './classes/keyed.js';
-import Path from './classes/path.js';
 
 import { html, svg } from './create.js';
 import empty from '@webreflection/empty/array';
@@ -35,6 +34,14 @@ const map = node => {
 };
 
 /**
+ * @param {1 | 2 | 8} type the node type at that path
+ * @param {'#comment' | '#text' | import("../types.js").AttributeName} name either `#comment`, `#text` or the attribute's name
+ * @param {number[]} path a list of indexes from the top parent node to retrieve either the attribute element owner, or the node
+ * @returns 
+ */
+const info = (type, name, path) => ({ type, name, path });
+
+/**
  * @param {boolean} SVG
  * @param {Node} node
  * @param {number[]} paths
@@ -46,7 +53,7 @@ const parse = (SVG, node, paths, i) => {
     case COMMENT_NODE: {
       // holes
       if (node.data === prefix + i) {
-        paths.push(new Path(COMMENT_NODE, '#comment', map(node)));
+        paths.push(info(COMMENT_NODE, '#comment', map(node)));
         i++;
       }
       break;
@@ -57,7 +64,7 @@ const parse = (SVG, node, paths, i) => {
       while (node.hasAttribute(search = prefix + i)) {
         const name = node.getAttribute(search);
         if (name === 'key') key = paths.length;
-        paths.push(new Path(ATTRIBUTE_NODE, name, path || (path = map(node))));
+        paths.push(info(ATTRIBUTE_NODE, name, path || (path = map(node))));
         node.removeAttribute(search);
         i++;
       }
@@ -67,7 +74,7 @@ const parse = (SVG, node, paths, i) => {
         TEXT_ELEMENTS.test(node.localName) &&
         node.textContent.trim() === `<!--${search}-->`
       ) {
-        paths.push(new Path(ELEMENT_NODE, '#text', path || map(node)));
+        paths.push(info(ELEMENT_NODE, '#text', path || map(node)));
         i++;
       }
       break;

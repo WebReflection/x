@@ -1,4 +1,3 @@
-import Lazy from './lazy.js';
 import Node from './node.js';
 
 import { direct } from '../utils.js';
@@ -12,7 +11,15 @@ export default class Keyed extends Node {
     this.map = new DirectMap;
   }
   create(update, once) {
-    const { key, map } = this;
-    return new Lazy(key, map, () => super.create(update, once));
+    return {
+      update: values => {
+        const { key, map } = this;
+        const value = values[key];
+        const info = map.get(value) || map.set(
+          value, super.create(update, once)
+        );
+        return info.update(values);
+      },
+    };
   }
 }
