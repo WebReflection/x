@@ -21,7 +21,7 @@
   <script type="module">
     import { render, html, svg } from '../src/html.js';
 
-    const thingy = () => html`!${[html`<div key=${'a'}>a</div>`, html`b`]}`;
+    const thingy = () => html`${[html`<div key=${'a'}>a</div>`, html`b`]}`;
     document.body.appendChild(thingy());
     setTimeout(render, 1000, document.body, thingy);
     // render(document.body, thingy);

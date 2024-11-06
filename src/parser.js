@@ -1,18 +1,28 @@
 
 import {
-  ATTRIBUTE_NODE,
+  ATTRIBUTE_NODE as A,
   COMMENT_NODE,
-  ELEMENT_NODE
+  ELEMENT_NODE,
 } from 'domconstants/constants';
 
 import { TEXT_ELEMENTS } from 'domconstants/re';
 
-import Node from './classes/node.js';
-import Keyed from './classes/keyed.js';
+import {
+  ANY,
+  ARRAY,
+  HOLE,
+  OBJECT,
+} from './constants.js';
 
-import { html, svg } from './create.js';
 import empty from '@webreflection/empty/array';
 import parser from '@webreflection/uparser';
+
+import Hole from './classes/hole.js';
+import Keyed from './classes/keyed.js';
+import Node from './classes/node.js';
+
+import { html, svg } from './create.js';
+import { attribute, isArray, isObject } from './utils.js';
 
 const prefix = '_x';
 const { indexOf } = empty;
@@ -35,53 +45,19 @@ const map = node => {
 
 /**
  * @param {1 | 2 | 8} type the node type at that path
- * @param {'#comment' | '#text' | import("../types.js").AttributeName} name either `#comment`, `#text` or the attribute's name
  * @param {number[]} path a list of indexes from the top parent node to retrieve either the attribute element owner, or the node
+ * @param {{k:string, v:string} | ANY | ARRAY | HOLE | OBJECT | null} extra
  * @returns 
  */
-const info = (type, name, path) => ({ type, name, path });
+const info = (type, path, extra) => ({ type, path, extra });
+
+const kv = (k, v) => ({ k, v });
 
 /**
- * @param {boolean} SVG
- * @param {Node} node
- * @param {number[]} paths
- * @param {number} i
- * @returns {number}
+ * @param {Element | DocumentFragment} target
+ * @returns {TreeWalker}
  */
-const parse = (SVG, node, paths, i) => {
-  switch (node.nodeType) {
-    case COMMENT_NODE: {
-      // holes
-      if (node.data === prefix + i) {
-        paths.push(info(COMMENT_NODE, '#comment', map(node)));
-        i++;
-      }
-      break;
-    }
-    case ELEMENT_NODE: {
-      let path, search;
-      // attributes
-      while (node.hasAttribute(search = prefix + i)) {
-        const name = node.getAttribute(search);
-        if (name === 'key') key = paths.length;
-        paths.push(info(ATTRIBUTE_NODE, name, path || (path = map(node))));
-        node.removeAttribute(search);
-        i++;
-      }
-      // text only elements: plaintext, script, style, textarea, title, xmp
-      if (
-        !SVG &&
-        TEXT_ELEMENTS.test(node.localName) &&
-        node.textContent.trim() === `<!--${search}-->`
-      ) {
-        paths.push(info(ELEMENT_NODE, '#text', path || map(node)));
-        i++;
-      }
-      break;
-    }
-  }
-  return i;
-};
+const treeWalker = target => document.createTreeWalker(target, 1 | 128);
 
 /**
  * @param {boolean} SVG indicate SVG parser VS an HTML one
@@ -89,16 +65,64 @@ const parse = (SVG, node, paths, i) => {
  */
 export default SVG => {
   const content = SVG ? svg : html;
-  return template => {
+  return (template, values, attr) => {
     const text = parser(template, prefix, SVG);
     const node = content(text);
     const length = template.length - 1;
     let paths = empty;
     if (length) {
-      let i = parse(SVG, node, paths = [], 0);
-      if (i < length) {
-        const tw = document.createTreeWalker(node, 1 | 128);
-        while (i < length) i = parse(SVG, tw.nextNode(), paths, i);
+      let tw, target, i = 0;
+      paths = [];
+      while (i < length) {
+        target = tw?.nextNode() || node;
+        switch (target.nodeType) {
+          case COMMENT_NODE: {
+            // holes
+            if (target.data === prefix + i) {
+              const value = values[i];
+              const extra = value instanceof Hole ? HOLE : (
+                isArray(value) ? ARRAY : (
+                  isObject(value) ? OBJECT : ANY
+                )
+              );
+              paths.push(info(COMMENT_NODE, map(target), extra));
+              i++;
+            }
+            break;
+          }
+          case ELEMENT_NODE: {
+            let path, search;
+            // attributes
+            while (target.hasAttribute(search = prefix + i)) {
+              let extra;
+              const name = target.getAttribute(search);
+              if (name === 'key') {
+                extra = kv(name, name);
+                key = i;
+              }
+              else {
+                let c = name[0];
+                let k = c in attr ? c : (name in attr ? name : attribute);
+                extra = kv(k, c === k ? name.slice(1) : name);
+              }
+              paths.push(info(A, path || (path = map(target)), extra));
+              target.removeAttribute(search);
+              i++;
+            }
+            // text only elements:
+            // plaintext, script, style, textarea, title, xmp
+            if (
+              !SVG &&
+              TEXT_ELEMENTS.test(target.localName) &&
+              target.textContent.trim() === `<!--${search}-->`
+            ) {
+              paths.push(info(ELEMENT_NODE, path || map(target), null));
+              i++;
+            }
+            break;
+          }
+        }
+        if (i < length && !tw) tw = treeWalker(node);
       }
     }
     const Class = key < 0 ? Node : Keyed;

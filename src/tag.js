@@ -55,11 +55,8 @@ export const tag = (SVG, attr, diff, text) => {
   const dwm = new DirectWeakMap;
   const parse = parser(SVG);
   const update = {
-    [ATTRIBUTE_NODE]: (node, name, once) => {
-      let c = name[0], k = c in attr ? c : (name in attr ? name : attribute);
-      return attr[k](node, c === k ? name.slice(1) : name, once, SVG);
-    },
-    [COMMENT_NODE]: (node, once) => diff(node, once, SVG),
+    [ATTRIBUTE_NODE]: (node, once, { k, v }) => attr[k](node, v, once, SVG),
+    [COMMENT_NODE]: (node, once, hint) => diff(node, hint, once, SVG),
     [ELEMENT_NODE]: text,
   };
 
@@ -68,7 +65,7 @@ export const tag = (SVG, attr, diff, text) => {
    * @param {...unknown} values
    */
   return (template, ...values) => (rendering === null ? once : many)(
-    dwm.get(template) || dwm.set(template, parse(template)),
+    dwm.get(template) || dwm.set(template, parse(template, values, attr)),
     update,
     values,
   )

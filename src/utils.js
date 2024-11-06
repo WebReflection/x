@@ -4,8 +4,6 @@ const { isArray } = Array;
 const attribute = Symbol();
 export { isArray, attribute };
 
-export const isHole = value => value instanceof Hole;
-
 export const isObject = value => value && typeof value === 'object';
 
 export const direct = Map => class extends Map {
