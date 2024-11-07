@@ -1,29 +1,44 @@
-import {
-  isArray,
-  attribute,
-  handleListener,
-  key,
-  setAttribute,
-  setProperty,
-  toggleAttribute,
-} from '../utils.js';
+import { attribute, isArray } from '../utils.js';
 
-const setClassName = (node, _, value) => {
+const args = value => isArray(value) ? value : [value];
+
+const handleListener = (node, prev, type) => value => {
+  const curr = args(value);
+  if (curr[0] != prev[0]) {
+    if (prev[0]) node.removeEventListener(type, ...prev);
+    if (curr[0]) node.addEventListener(type, ...curr);
+    prev = curr;
+  }
+};
+
+const key = () => key;
+
+const setAttribute = (node, value, name) => {
+  if (value == null) node.removeAttribute(name);
+  else node.setAttribute(name, value);
+};
+
+const setClassName = (node, value) => {
   node.className = value == null ? '' : value;
 };
 
-const setStyle = (style, _, value) => {
+const setProperty = (node, value, prop) => {
+  node[prop] = value;
+};
+
+const setStyle = (style, value) => {
   style.cssText = value == null ? '' : value;
 };
 
-const storeValueFor = (callback, node, name) => {
-  let prev;
-  return curr => {
-    if (prev != curr) {
-      prev = curr;
-      callback(node, name, curr);
-    }
-  };
+const storeValueFor = (callback, node, prev, name) => curr => {
+  if (prev != curr) {
+    prev = curr;
+    callback(node, curr, name);
+  }
+};
+
+const toggleAttribute = (node, value, name) => {
+  node.toggleAttribute(name, value);
 };
 
 // pretty much what uhtml exports except
@@ -37,35 +52,32 @@ export default {
   key,
   // default attributes handler
   [attribute]: (node, name, once) => once ?
-    value => setAttribute(node, name, value) :
-    storeValueFor(setAttribute, node, name)
+    value => setAttribute(node, value, name) :
+    storeValueFor(setAttribute, node, null, name)
   ,
   // special attributes handlers
   ['@']: (node, type, once) => once ?
-    value => {
-      const listener = isArray(value) ? value : [value || null];
-      node.addEventListener(type, ...listener);
-    } :
-    handleListener(node, type)
+    value => node.addEventListener(type, ...args(value)) :
+    handleListener(node, [null], type)
   ,
   ['?']: (node, name, once) => once ?
-    value => toggleAttribute(node, name, value) :
-    storeValueFor(toggleAttribute, node, name)
+    value => toggleAttribute(node, value, name) :
+    storeValueFor(toggleAttribute, node, false, name)
   ,
   ['.']: (node, prop, once) => once ?
-    value => setProperty(node, prop, value) :
-    storeValueFor(setProperty, node, prop)
+    value => setProperty(node, value, prop) :
+    storeValueFor(setProperty, node, null, prop)
   ,
   // augmented attributes handler
   aria: node => props => {
     for (const key in props) {
       const name = key === 'role' ? key : `aria-${key}`;
-      setAttribute(node, name, props[key]);
+      setAttribute(node, props[key], name);
     }
   },
   class: (node, name, once, SVG) => (once || SVG) ?
-    value => setAttribute(node, name, value) :
-    storeValueFor(setClassName, node, name)
+    value => setAttribute(node, value, name) :
+    storeValueFor(setClassName, node, '')
   ,
   data: ({ dataset }) => props => {
     for (const key in props) {
@@ -78,8 +90,8 @@ export default {
     if (typeof value === 'function') value(node);
     else value.current = node;
   },
-  style: ({ style }, name, once) => once ?
-    value => setStyle(style, name, value) :
-    storeValueFor(setStyle, style, name)
+  style: (node, name, once) => (once || SVG) ?
+    value => setAttribute(node, value, name) :
+    storeValueFor(setStyle, node.style, '')
   ,
 };

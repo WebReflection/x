@@ -7,7 +7,7 @@ import {
 import Hole from './classes/hole.js';
 import Stack from './classes/stack.js';
 
-import { direct, attribute } from './utils.js';
+import { direct } from './utils.js';
 import parser from './parser.js';
 
 /**

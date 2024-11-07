@@ -23,7 +23,7 @@ export default document => {
   
   var freeze = Object.freeze;
   
-  var empty$1 = freeze([]);
+  var empty = freeze([]);
   
   const STACK = 0;
   const ANY = 1;
@@ -47,7 +47,7 @@ export default document => {
       /** @type {import("../types.js").Info | import("../types.js").Keyed | null} */
       this.value = null;
       /** @type {Stack[]} */
-      this.cache = type === ARRAY ? [] : empty$1;
+      this.cache = type === ARRAY ? [] : empty;
     }
   
     /**
@@ -59,7 +59,7 @@ export default document => {
       if (different) {
         this.node = node;
         this.value = node.create(update, false);
-        this.cache = length ? [] : empty$1;
+        this.cache = length ? [] : empty;
       }
       return different;
     }
@@ -133,34 +133,6 @@ export default document => {
       super.set(key, value);
       return value;
     }
-  };
-  
-  const key$1 = () => key$1;
-  
-  const setAttribute = (node, name, value) => {
-    if (value == null) node.removeAttribute(name);
-    else node.setAttribute(name, value);
-  };
-  
-  const toggleAttribute = (node, name, value) => {
-    node.toggleAttribute(name, value);
-  };
-  
-  const setProperty = (node, prop, value) => {
-    node[prop] = value;
-  };
-  
-  const empty = [null];
-  const handleListener = (node, type) => {
-    let prev = empty;
-    return value => {
-      const curr = value ? (isArray(value) ? value : [value]) : empty;
-      if (curr[0] != prev[0]) {
-        if (prev[0]) node.removeEventListener(type, ...prev);
-        if (curr[0]) node.addEventListener(type, ...curr);
-        prev = curr;
-      }
-    };
   };
   
   const TEXT_ELEMENTS = /^(?:plaintext|script|style|textarea|title|xmp)$/i;
@@ -321,9 +293,9 @@ export default document => {
     create(update, once) {
       const { type, node, paths } = this;
       const { length } = paths;
-      const updates = length ? [] : empty$1;
+      const updates = length ? [] : empty;
       let dom = document.importNode(node, true);
-      for (let prevPath = empty$1, node = dom, i = 0; i < length; i++) {
+      for (let prevPath = empty, node = dom, i = 0; i < length; i++) {
         const { type, path, extra } = paths[i];
         // speed up multiple attributes per same node
         if (path !== prevPath) {
@@ -410,9 +382,9 @@ export default document => {
   };
   
   const prefix = '_x';
-  const { indexOf } = empty$1;
+  const { indexOf } = empty;
   
-  let key = -1;
+  let key$1 = -1;
   
   /**
    * @param {Node} node
@@ -425,7 +397,7 @@ export default document => {
       i = path.push(indexOf.call(parentNode.childNodes, node));
       node = parentNode;
     }
-    return i < 1 ? empty$1 : path;
+    return i ? path : empty;
   };
   
   /**
@@ -437,12 +409,7 @@ export default document => {
   const info = (type, path, extra) => ({ type, path, extra });
   
   const kv = (k, v) => ({ k, v });
-  
-  /**
-   * @param {Element | DocumentFragment} target
-   * @returns {TreeWalker}
-   */
-  const treeWalker = target => document.createTreeWalker(target, 1 | 128);
+  const keyValue = kv('key', '');
   
   /**
    * @param {boolean} SVG indicate SVG parser VS an HTML one
@@ -454,7 +421,7 @@ export default document => {
       const text = parser$1(template, prefix, SVG);
       const node = content(text);
       const length = template.length - 1;
-      let paths = empty$1;
+      let paths = empty;
       if (length) {
         let tw, target, i = 0;
         paths = [];
@@ -465,11 +432,11 @@ export default document => {
               // holes
               if (target.data === prefix + i) {
                 const value = values[i];
-                const extra = value instanceof Hole ? HOLE : (
-                  isArray(value) ? ARRAY : (
-                    isObject(value) ? OBJECT : ANY
-                  )
-                );
+                const extra = isObject(value) ?
+                  (value instanceof Hole ?
+                    HOLE : (isArray(value) ? ARRAY : OBJECT)) :
+                  ANY
+                ;
                 paths.push(info(COMMENT_NODE, map(target), extra));
                 i++;
               }
@@ -482,8 +449,8 @@ export default document => {
                 let extra;
                 const name = target.getAttribute(search);
                 if (name === 'key') {
-                  extra = kv(name, name);
-                  key = i;
+                  extra = keyValue;
+                  key$1 = i;
                 }
                 else {
                   let c = name[0];
@@ -507,12 +474,12 @@ export default document => {
               break;
             }
           }
-          if (i < length && !tw) tw = treeWalker(node);
+          if (i < length && !tw) tw = document.createTreeWalker(node, 1 | 128);
         }
       }
-      const Class = key < 0 ? Node : Keyed;
-      const parsed = new Class(node.nodeType, node, paths, key);
-      key = -1;
+      const Class = key$1 < 0 ? Node : Keyed;
+      const parsed = new Class(node.nodeType, node, paths, key$1);
+      key$1 = -1;
       return parsed;
     };
   };
@@ -578,22 +545,45 @@ export default document => {
     )
   };
   
-  const setClassName = (node, _, value) => {
+  const args = value => isArray(value) ? value : [value];
+  
+  const handleListener = (node, prev, type) => value => {
+    const curr = args(value);
+    if (curr[0] != prev[0]) {
+      if (prev[0]) node.removeEventListener(type, ...prev);
+      if (curr[0]) node.addEventListener(type, ...curr);
+      prev = curr;
+    }
+  };
+  
+  const key = () => key;
+  
+  const setAttribute = (node, value, name) => {
+    if (value == null) node.removeAttribute(name);
+    else node.setAttribute(name, value);
+  };
+  
+  const setClassName = (node, value) => {
     node.className = value == null ? '' : value;
   };
   
-  const setStyle = (style, _, value) => {
+  const setProperty = (node, value, prop) => {
+    node[prop] = value;
+  };
+  
+  const setStyle = (style, value) => {
     style.cssText = value == null ? '' : value;
   };
   
-  const storeValueFor = (callback, node, name) => {
-    let prev;
-    return curr => {
-      if (prev != curr) {
-        prev = curr;
-        callback(node, name, curr);
-      }
-    };
+  const storeValueFor = (callback, node, prev, name) => curr => {
+    if (prev != curr) {
+      prev = curr;
+      callback(node, curr, name);
+    }
+  };
+  
+  const toggleAttribute = (node, value, name) => {
+    node.toggleAttribute(name, value);
   };
   
   // pretty much what uhtml exports except
@@ -604,38 +594,35 @@ export default document => {
     __proto__: null,
     // this is by default a no-op as it does nothing on updates but
     // it's passed value is used to return the keyed node
-    key: key$1,
+    key,
     // default attributes handler
     [attribute]: (node, name, once) => once ?
-      value => setAttribute(node, name, value) :
-      storeValueFor(setAttribute, node, name)
+      value => setAttribute(node, value, name) :
+      storeValueFor(setAttribute, node, null, name)
     ,
     // special attributes handlers
     ['@']: (node, type, once) => once ?
-      value => {
-        const listener = isArray(value) ? value : [value || null];
-        node.addEventListener(type, ...listener);
-      } :
-      handleListener(node, type)
+      value => node.addEventListener(type, ...args(value)) :
+      handleListener(node, [null], type)
     ,
     ['?']: (node, name, once) => once ?
-      value => toggleAttribute(node, name, value) :
-      storeValueFor(toggleAttribute, node, name)
+      value => toggleAttribute(node, value, name) :
+      storeValueFor(toggleAttribute, node, false, name)
     ,
     ['.']: (node, prop, once) => once ?
-      value => setProperty(node, prop, value) :
-      storeValueFor(setProperty, node, prop)
+      value => setProperty(node, value, prop) :
+      storeValueFor(setProperty, node, null, prop)
     ,
     // augmented attributes handler
     aria: node => props => {
       for (const key in props) {
         const name = key === 'role' ? key : `aria-${key}`;
-        setAttribute(node, name, props[key]);
+        setAttribute(node, props[key], name);
       }
     },
     class: (node, name, once, SVG) => (once || SVG) ?
-      value => setAttribute(node, name, value) :
-      storeValueFor(setClassName, node, name)
+      value => setAttribute(node, value, name) :
+      storeValueFor(setClassName, node, '')
     ,
     data: ({ dataset }) => props => {
       for (const key in props) {
@@ -648,9 +635,9 @@ export default document => {
       if (typeof value === 'function') value(node);
       else value.current = node;
     },
-    style: ({ style }, name, once) => once ?
-      value => setStyle(style, name, value) :
-      storeValueFor(setStyle, style, name)
+    style: (node, name, once) => (once || SVG) ?
+      value => setAttribute(node, value, name) :
+      storeValueFor(setStyle, node.style, '')
     ,
   };
   
@@ -818,7 +805,7 @@ export default document => {
     prev = udomdiff(
       node.parentNode,
       prev,
-      curr.length ? curr : empty$1,
+      curr.length ? curr : empty,
       diff,
       node
     );
@@ -826,7 +813,7 @@ export default document => {
   
   const multi$1 = (node, hint) => {
     if (hint === ARRAY)
-      return array(node, empty$1);
+      return array(node, empty);
     if (hint === ANY) {
       let prev = '';
       const text = document.createTextNode(prev);
@@ -852,7 +839,7 @@ export default document => {
     if (hint === ARRAY) {
       udomdiff(
         node.parentNode,
-        empty$1,
+        empty,
         value,
         diff,
         node

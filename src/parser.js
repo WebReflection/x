@@ -40,7 +40,7 @@ const map = node => {
     i = path.push(indexOf.call(parentNode.childNodes, node));
     node = parentNode;
   }
-  return i < 1 ? empty : path;
+  return i ? path : empty;
 };
 
 /**
@@ -52,12 +52,7 @@ const map = node => {
 const info = (type, path, extra) => ({ type, path, extra });
 
 const kv = (k, v) => ({ k, v });
-
-/**
- * @param {Element | DocumentFragment} target
- * @returns {TreeWalker}
- */
-const treeWalker = target => document.createTreeWalker(target, 1 | 128);
+const keyValue = kv('key', '');
 
 /**
  * @param {boolean} SVG indicate SVG parser VS an HTML one
@@ -80,11 +75,11 @@ export default SVG => {
             // holes
             if (target.data === prefix + i) {
               const value = values[i];
-              const extra = value instanceof Hole ? HOLE : (
-                isArray(value) ? ARRAY : (
-                  isObject(value) ? OBJECT : ANY
-                )
-              );
+              const extra = isObject(value) ?
+                (value instanceof Hole ?
+                  HOLE : (isArray(value) ? ARRAY : OBJECT)) :
+                ANY
+              ;
               paths.push(info(COMMENT_NODE, map(target), extra));
               i++;
             }
@@ -97,7 +92,7 @@ export default SVG => {
               let extra;
               const name = target.getAttribute(search);
               if (name === 'key') {
-                extra = kv(name, name);
+                extra = keyValue;
                 key = i;
               }
               else {
@@ -122,7 +117,7 @@ export default SVG => {
             break;
           }
         }
-        if (i < length && !tw) tw = treeWalker(node);
+        if (i < length && !tw) tw = document.createTreeWalker(node, 1 | 128);
       }
     }
     const Class = key < 0 ? Node : Keyed;
