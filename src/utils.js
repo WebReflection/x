@@ -10,3 +10,9 @@ export const direct = Map => class extends Map {
     return value;
   }
 };
+
+export const asString = value => value == null ? '' : value;
+
+export const asStringProp = prop => (ref, value) => {
+  ref[prop] = asString(value);
+};

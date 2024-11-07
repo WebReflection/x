@@ -1,5 +1,3 @@
-import empty from '@webreflection/empty/array';
-
 import { COMMENT_NODE } from 'domconstants/constants';
 
 import {
@@ -10,6 +8,8 @@ import {
   OBJECT,
 } from '../constants.js';
 
+import empty from '@webreflection/empty/array';
+
 /**
  * @typedef {Object} ReplaceChildren
  * @prop {(node:Node) => void} replaceChildren
@@ -19,7 +19,7 @@ export default class Stack {
   /**
    * @param {STACK | ANY | ARRAY | HOLE | OBJECT} type
    */
-  constructor(type = STACK) {
+  constructor(type) {
     this.type = type;
     /** @type {import("../types.js").ParsedNode?} */
     this.node = null;
@@ -55,14 +55,14 @@ export default class Stack {
       if (type === COMMENT_NODE) {
         const prev = cache[i] || (cache[i] = new Stack(extra));
         switch (prev.type) {
+          case ARRAY: {
+            prev.unrollArray(curr);
+            break;
+          }
           case HOLE: {
             const different = prev.as(curr);
             const node = prev.unroll(curr);
             values[i] = different ? node.valueOf() : node;
-            break;
-          }
-          case ARRAY: {
-            prev.unrollArray(curr);
             break;
           }
           case OBJECT: {
@@ -84,8 +84,8 @@ export default class Stack {
     const { length } = values;
     if (length < cache.length) cache.splice(length);
     for (let i = 0; i < length; i++) {
-      const curr = values[i];
       const prev = cache[i] || (cache[i] = new Stack(HOLE));
+      const curr = values[i];
       prev.as(curr);
       values[i] = prev.unroll(curr);
     }

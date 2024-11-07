@@ -8,6 +8,12 @@ export default document => {
   const COMMENT_NODE = 8;
   const DOCUMENT_FRAGMENT_NODE = 11;
   
+  const STACK = 0;
+  const ANY = 1;
+  const ARRAY = 2;
+  const HOLE = 3;
+  const OBJECT = 4;
+  
   class Hole {
     /**
      * @param {import("../types.js").Node} node
@@ -25,12 +31,6 @@ export default document => {
   
   var empty = freeze([]);
   
-  const STACK = 0;
-  const ANY = 1;
-  const ARRAY = 2;
-  const HOLE = 3;
-  const OBJECT = 4;
-  
   /**
    * @typedef {Object} ReplaceChildren
    * @prop {(node:Node) => void} replaceChildren
@@ -40,7 +40,7 @@ export default document => {
     /**
      * @param {STACK | ANY | ARRAY | HOLE | OBJECT} type
      */
-    constructor(type = STACK) {
+    constructor(type) {
       this.type = type;
       /** @type {import("../types.js").ParsedNode?} */
       this.node = null;
@@ -76,14 +76,14 @@ export default document => {
         if (type === COMMENT_NODE) {
           const prev = cache[i] || (cache[i] = new Stack(extra));
           switch (prev.type) {
+            case ARRAY: {
+              prev.unrollArray(curr);
+              break;
+            }
             case HOLE: {
               const different = prev.as(curr);
               const node = prev.unroll(curr);
               values[i] = different ? node.valueOf() : node;
-              break;
-            }
-            case ARRAY: {
-              prev.unrollArray(curr);
               break;
             }
             case OBJECT: {
@@ -105,8 +105,8 @@ export default document => {
       const { length } = values;
       if (length < cache.length) cache.splice(length);
       for (let i = 0; i < length; i++) {
-        const curr = values[i];
         const prev = cache[i] || (cache[i] = new Stack(HOLE));
+        const curr = values[i];
         prev.as(curr);
         values[i] = prev.unroll(curr);
       }
@@ -133,6 +133,12 @@ export default document => {
       super.set(key, value);
       return value;
     }
+  };
+  
+  const asString = value => value == null ? '' : value;
+  
+  const asStringProp = prop => (ref, value) => {
+    ref[prop] = asString(value);
   };
   
   const TEXT_ELEMENTS = /^(?:plaintext|script|style|textarea|title|xmp)$/i;
@@ -513,7 +519,7 @@ export default document => {
    */
   const render = (where, what) => {
     const prev = rendering;
-    rendering = dwm.get(where) || dwm.set(where, new Stack);
+    rendering = dwm.get(where) || dwm.set(where, new Stack(STACK));
     try { rendering.update(where, what()); }
     finally { rendering = prev; }
     return where;
@@ -563,16 +569,11 @@ export default document => {
     else node.setAttribute(name, value);
   };
   
-  const setClassName = (node, value) => {
-    node.className = value == null ? '' : value;
-  };
+  const setClassName = asStringProp('className');
+  const setStyle = asStringProp('cssText');
   
   const setProperty = (node, value, prop) => {
     node[prop] = value;
-  };
-  
-  const setStyle = (style, value) => {
-    style.cssText = value == null ? '' : value;
   };
   
   const storeValueFor = (callback, node, prev, name) => curr => {
@@ -799,8 +800,18 @@ export default document => {
     return b;
   };
   
-  const { diff } = Fragment;
+  const any = (node, prev) => {
+    const text = document.createTextNode(prev);
+    node.replaceWith(text);
+    return curr => {
+      if (curr != prev) {
+        prev = curr;
+        text.data = asString(curr);
+      }
+    };
+  };
   
+  const { diff } = Fragment;
   const array = (node, prev) => curr => {
     prev = udomdiff(
       node.parentNode,
@@ -811,64 +822,42 @@ export default document => {
     );
   };
   
-  const multi$1 = (node, hint) => {
-    if (hint === ARRAY)
-      return array(node, empty);
-    if (hint === ANY) {
-      let prev = '';
-      const text = document.createTextNode(prev);
-      node.replaceWith(text);
-      return value => {
-        const curr = value == null ? '' : value;
-        if (curr !== prev) {
-          prev = curr;
-          text.data = curr;
-        }
-      };
+  const object = node => curr => {
+    if (node !== curr) {
+      const value = curr.valueOf();
+      node.replaceWith(value);
+      node = value;
     }
-    return curr => {
-      if (node !== curr) {
-        const value = curr.valueOf();
-        node.replaceWith(value);
-        node = value;
-      }
-    };
+  };
+  
+  const multi$1 = (node, hint) => {
+    if (hint === ARRAY) return array(node, empty);
+    if (hint === ANY) return any(node, '');
+    return object(node);
   };
   
   const oneOff$1 = (node, hint) => value => {
     if (hint === ARRAY) {
-      udomdiff(
-        node.parentNode,
-        empty,
-        value,
-        diff,
-        node
-      );
+      array(node, empty)(value);
       node.remove();
     }
+    else if (hint === ANY) {
+      any(node, '')(value);
+    }
     else {
-      node.replaceWith(
-        hint === ANY ?
-          document.createTextNode(value == null ? '' : value) :
-          value.valueOf()
-      );
+      node.replaceWith(value.valueOf());
     }
   };
   
   var diff$1 = (node, hint, once) => (once ? oneOff$1 : multi$1)(node, hint);
   
-  const setContent = (node, value) => {
-    node.textContent = value == null ? '' : value;
-  };
+  const setContent = asStringProp('textContent');
   
-  const multi = node => {
-    let prev;
-    return curr => {
-      if (prev != curr) {
-        prev = curr;
-        setContent(node, curr);
-      }
-    };
+  const multi = (node, prev) => curr => {
+    if (prev != curr) {
+      prev = curr;
+      setContent(node, curr);
+    }
   };
   
   const oneOff = node => value => setContent(node, value);

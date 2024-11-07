@@ -1,4 +1,4 @@
-import { attribute, isArray } from '../utils.js';
+import { attribute, asStringProp, isArray } from '../utils.js';
 
 const args = value => isArray(value) ? value : [value];
 
@@ -18,16 +18,11 @@ const setAttribute = (node, value, name) => {
   else node.setAttribute(name, value);
 };
 
-const setClassName = (node, value) => {
-  node.className = value == null ? '' : value;
-};
+const setClassName = asStringProp('className');
+const setStyle = asStringProp('cssText');
 
 const setProperty = (node, value, prop) => {
   node[prop] = value;
-};
-
-const setStyle = (style, value) => {
-  style.cssText = value == null ? '' : value;
 };
 
 const storeValueFor = (callback, node, prev, name) => curr => {

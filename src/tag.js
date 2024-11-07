@@ -4,6 +4,9 @@ import {
   ELEMENT_NODE
 } from 'domconstants/constants';
 
+
+import { STACK } from './constants.js';
+
 import Hole from './classes/hole.js';
 import Stack from './classes/stack.js';
 
@@ -39,7 +42,7 @@ let rendering = null;
  */
 export const render = (where, what) => {
   const prev = rendering;
-  rendering = dwm.get(where) || dwm.set(where, new Stack);
+  rendering = dwm.get(where) || dwm.set(where, new Stack(STACK));
   try { rendering.update(where, what()) }
   finally { rendering = prev }
   return where;
