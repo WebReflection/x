@@ -4,6 +4,11 @@ export { isArray, attribute };
 
 export const isObject = value => value && typeof value === 'object';
 
+export const diffNode = (stack, hole) => [
+  stack.as(hole),
+  stack.get(hole),
+];
+
 export const direct = Map => class extends Map {
   set(key, value) {
     super.set(key, value);

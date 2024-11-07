@@ -31,10 +31,45 @@ export default document => {
   
   var empty = freeze([]);
   
+  const { isArray } = Array;
+  const attribute = Symbol();
+  
+  const isObject = value => value && typeof value === 'object';
+  
+  const diffNode = (stack, hole) => [
+    stack.as(hole),
+    stack.get(hole),
+  ];
+  
+  const direct = Map => class extends Map {
+    set(key, value) {
+      super.set(key, value);
+      return value;
+    }
+  };
+  
+  const asString = value => value == null ? '' : value;
+  
+  const asStringProp = prop => (ref, value) => {
+    ref[prop] = asString(value);
+  };
+  
   /**
    * @typedef {Object} ReplaceChildren
    * @prop {(node:Node) => void} replaceChildren
    */
+  
+  const array$1 = ({ cache }, values) => {
+    const { length } = values;
+    if (length < cache.length)
+      cache.splice(length);
+    for (let i = 0; i < length; i++) {
+      values[i] = diffNode(
+        cache[i] || (cache[i] = new Stack(HOLE)),
+        values[i]
+      )[1];
+    }
+  };
   
   class Stack {
     /**
@@ -68,25 +103,25 @@ export default document => {
      * @param {import("../types.js").Hole} hole
      * @returns {import("../types.js").GenericNode}
      */
-    unroll({ values }) {
+    get({ values }) {
       const { cache, value, node: { paths } } = this;
-      for (let i = 0, { length } = values; i < length; i++) {
-        const curr = values[i];
-        const { type, extra } = paths[i];
-        if (type === COMMENT_NODE) {
-          const prev = cache[i] || (cache[i] = new Stack(extra));
+      for (let j = 0, i = 0; i < paths.length; i++) {
+        const path = paths[i];
+        if (path.type === COMMENT_NODE) {
+          const prev = cache[j] || (cache[j] = new Stack(path.extra));
+          j++;
           switch (prev.type) {
-            case ARRAY: {
-              prev.unrollArray(curr);
+            case HOLE: {
+              const [diff, node] = diffNode(prev, values[i]);
+              values[i] = diff ? node.valueOf() : node;
               break;
             }
-            case HOLE: {
-              const different = prev.as(curr);
-              const node = prev.unroll(curr);
-              values[i] = different ? node.valueOf() : node;
+            case ARRAY: {
+              array$1(prev, values[i]);
               break;
             }
             case OBJECT: {
+              const curr = values[i];
               if (prev.value !== curr) {
                 prev.value = curr;
                 values[i] = curr.valueOf();
@@ -95,51 +130,10 @@ export default document => {
             }
           }
         }
-        else cache[i] = null;
       }
       return value.update(values);
     }
-  
-    unrollArray(values) {
-      const { cache } = this;
-      const { length } = values;
-      if (length < cache.length) cache.splice(length);
-      for (let i = 0; i < length; i++) {
-        const prev = cache[i] || (cache[i] = new Stack(HOLE));
-        const curr = values[i];
-        prev.as(curr);
-        values[i] = prev.unroll(curr);
-      }
-    }
-  
-    /**
-     * @param {Element | DocumentFragment | ReplaceChildren} where
-     * @param {import("../types.js").Hole} what
-     */
-    update(where, what) {
-      const different = this.as(what);
-      const node = this.unroll(what);
-      if (different) where.replaceChildren(node.valueOf());
-    }
   }
-  
-  const { isArray } = Array;
-  const attribute = Symbol();
-  
-  const isObject = value => value && typeof value === 'object';
-  
-  const direct = Map => class extends Map {
-    set(key, value) {
-      super.set(key, value);
-      return value;
-    }
-  };
-  
-  const asString = value => value == null ? '' : value;
-  
-  const asStringProp = prop => (ref, value) => {
-    ref[prop] = asString(value);
-  };
   
   const TEXT_ELEMENTS = /^(?:plaintext|script|style|textarea|title|xmp)$/i;
   const VOID_ELEMENTS = /^(?:area|base|br|col|embed|hr|img|input|keygen|link|menuitem|meta|param|source|track|wbr)$/i;
@@ -514,14 +508,19 @@ export default document => {
   
   /**
    * @param {ParentNode} where
-   * @param {() => import("../types.js").ParsedNode} what
+   * @param {() => import("../types.js").Hole} what
    * @returns {ParentNode}
    */
   const render = (where, what) => {
     const prev = rendering;
     rendering = dwm.get(where) || dwm.set(where, new Stack(STACK));
-    try { rendering.update(where, what()); }
-    finally { rendering = prev; }
+    try {
+      const [diff, node] = diffNode(rendering, what());
+      if (diff) where.replaceChildren(node.valueOf());
+    }
+    finally {
+      rendering = prev;
+    }
     return where;
   };
   

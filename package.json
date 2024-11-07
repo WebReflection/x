@@ -7,6 +7,7 @@
   "module": "./src/html.js",
   "exports": {
     ".": "./x.js",
+    "./attributes": "./src/handle/attr.js",
     "./fragment": "./src/classes/fragment.js",
     "./html": "./src/html.js",
     "./pony": "./src/pony.js",

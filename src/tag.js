@@ -10,7 +10,7 @@ import { STACK } from './constants.js';
 import Hole from './classes/hole.js';
 import Stack from './classes/stack.js';
 
-import { direct } from './utils.js';
+import { direct, diffNode } from './utils.js';
 import parser from './parser.js';
 
 /**
@@ -37,14 +37,19 @@ let rendering = null;
 
 /**
  * @param {ParentNode} where
- * @param {() => import("../types.js").ParsedNode} what
+ * @param {() => import("../types.js").Hole} what
  * @returns {ParentNode}
  */
 export const render = (where, what) => {
   const prev = rendering;
   rendering = dwm.get(where) || dwm.set(where, new Stack(STACK));
-  try { rendering.update(where, what()) }
-  finally { rendering = prev }
+  try {
+    const [diff, node] = diffNode(rendering, what());
+    if (diff) where.replaceChildren(node.valueOf());
+  }
+  finally {
+    rendering = prev;
+  }
   return where;
 };
 

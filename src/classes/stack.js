@@ -10,10 +10,24 @@ import {
 
 import empty from '@webreflection/empty/array';
 
+import { diffNode } from '../utils.js';
+
 /**
  * @typedef {Object} ReplaceChildren
  * @prop {(node:Node) => void} replaceChildren
  */
+
+const array = ({ cache }, values) => {
+  const { length } = values;
+  if (length < cache.length)
+    cache.splice(length);
+  for (let i = 0; i < length; i++) {
+    values[i] = diffNode(
+      cache[i] || (cache[i] = new Stack(HOLE)),
+      values[i]
+    )[1];
+  }
+};
 
 export default class Stack {
   /**
@@ -47,25 +61,25 @@ export default class Stack {
    * @param {import("../types.js").Hole} hole
    * @returns {import("../types.js").GenericNode}
    */
-  unroll({ values }) {
+  get({ values }) {
     const { cache, value, node: { paths } } = this;
-    for (let i = 0, { length } = values; i < length; i++) {
-      const curr = values[i];
-      const { type, extra } = paths[i];
-      if (type === COMMENT_NODE) {
-        const prev = cache[i] || (cache[i] = new Stack(extra));
+    for (let j = 0, i = 0; i < paths.length; i++) {
+      const path = paths[i];
+      if (path.type === COMMENT_NODE) {
+        const prev = cache[j] || (cache[j] = new Stack(path.extra));
+        j++;
         switch (prev.type) {
-          case ARRAY: {
-            prev.unrollArray(curr);
+          case HOLE: {
+            const [diff, node] = diffNode(prev, values[i]);
+            values[i] = diff ? node.valueOf() : node;
             break;
           }
-          case HOLE: {
-            const different = prev.as(curr);
-            const node = prev.unroll(curr);
-            values[i] = different ? node.valueOf() : node;
+          case ARRAY: {
+            array(prev, values[i]);
             break;
           }
           case OBJECT: {
+            const curr = values[i];
             if (prev.value !== curr) {
               prev.value = curr;
               values[i] = curr.valueOf();
@@ -74,30 +88,7 @@ export default class Stack {
           }
         }
       }
-      else cache[i] = null;
     }
     return value.update(values);
-  }
-
-  unrollArray(values) {
-    const { cache } = this;
-    const { length } = values;
-    if (length < cache.length) cache.splice(length);
-    for (let i = 0; i < length; i++) {
-      const prev = cache[i] || (cache[i] = new Stack(HOLE));
-      const curr = values[i];
-      prev.as(curr);
-      values[i] = prev.unroll(curr);
-    }
-  }
-
-  /**
-   * @param {Element | DocumentFragment | ReplaceChildren} where
-   * @param {import("../types.js").Hole} what
-   */
-  update(where, what) {
-    const different = this.as(what);
-    const node = this.unroll(what);
-    if (different) where.replaceChildren(node.valueOf());
   }
 }
