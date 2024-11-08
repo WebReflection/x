@@ -1,46 +1,54 @@
-import { COMMENT_NODE } from 'domconstants/constants';
-
 import {
-  STACK,
   ANY,
   ARRAY,
+  COMMENT_NODE,
   HOLE,
   OBJECT,
+  STACK,
 } from '../constants.js';
 
-import empty from '@webreflection/empty/array';
-
-import { diffNode } from '../utils.js';
+import { empty } from '../utils.js';
 
 /**
  * @typedef {Object} ReplaceChildren
  * @prop {(node:Node) => void} replaceChildren
  */
 
-const array = ({ cache }, values) => {
-  const { length } = values;
+const diff = (stack, hole) => [
+  stack.as(hole),
+  stack.get(hole),
+];
+
+/**
+ * @param {Stack[]} cache
+ * @param {import("../types.js").Hole[]} holes
+ */
+const array = (cache, holes) => {
+  const { length } = holes;
   if (length < cache.length)
     cache.splice(length);
   for (let i = 0; i < length; i++) {
-    values[i] = diffNode(
+    holes[i] = diff(
       cache[i] || (cache[i] = new Stack(HOLE)),
-      values[i]
+      holes[i]
     )[1];
   }
 };
 
 export default class Stack {
+  static diff = diff;
+
   /**
    * @param {STACK | ANY | ARRAY | HOLE | OBJECT} type
    */
   constructor(type) {
     this.type = type;
-    /** @type {import("../types.js").ParsedNode?} */
+    /** @type {import("../types.js").Node | import("../types.js").Keyed | null} */
     this.node = null;
-    /** @type {import("../types.js").Info | import("../types.js").Keyed | null} */
+    /** @type {{ update: (values: unknown[]) => GenericNode }?} */
     this.value = null;
     /** @type {Stack[]} */
-    this.cache = type === ARRAY ? [] : empty;
+    this.cache = empty;
   }
 
   /**
@@ -62,32 +70,34 @@ export default class Stack {
    * @returns {import("../types.js").GenericNode}
    */
   get({ values }) {
-    const { cache, value, node: { paths } } = this;
+    const { node: { paths }, value, cache } = this;
     for (let j = 0, i = 0; i < paths.length; i++) {
-      const path = paths[i];
-      if (path.type === COMMENT_NODE) {
-        const prev = cache[j] || (cache[j] = new Stack(path.extra));
-        j++;
-        switch (prev.type) {
-          case HOLE: {
-            const [diff, node] = diffNode(prev, values[i]);
-            values[i] = diff ? node.valueOf() : node;
-            break;
-          }
-          case ARRAY: {
-            array(prev, values[i]);
-            break;
-          }
-          // TODO: not sure about this one ... 
-          // case OBJECT: {
-          //   const curr = values[i];
-          //   if (prev.value !== curr) {
-          //     prev.value = curr;
-          //     values[i] = curr.valueOf();
-          //   }
-          //   break;
-          // }
+      const { type, extra } = paths[i];
+      if (type === COMMENT_NODE) {
+        if (extra === HOLE) {
+          const [different, node] = diff(
+            cache[j] || (cache[j] = new Stack(extra)),
+            values[i]
+          );
+          values[i] = different ? node.valueOf() : node;
+          j++;
         }
+        else if (extra === ARRAY) {
+          array(
+            cache[j] || (cache[j] = []),
+            values[i]
+          );
+          j++;
+        }
+        // TODO: not sure about this one ...
+        // else if (extra === OBJECT) {
+        //   const curr = values[i];
+        //   if (cache[j] != curr) {
+        //     cache[j] = curr;
+        //     values[i] = curr.valueOf();
+        //   }
+        //   j++;
+        // }
       }
     }
     return value.update(values);

@@ -8,15 +8,18 @@ export default document => {
   const COMMENT_NODE = 8;
   const DOCUMENT_FRAGMENT_NODE = 11;
   
-  const STACK = 0;
+  const TEXT_ELEMENTS = /^(?:plaintext|script|style|textarea|title|xmp)$/i;
+  const VOID_ELEMENTS = /^(?:area|base|br|col|embed|hr|img|input|keygen|link|menuitem|meta|param|source|track|wbr)$/i;
+  
   const ANY = 1;
   const ARRAY = 2;
   const HOLE = 3;
   const OBJECT = 4;
+  const STACK = 0;
   
   class Hole {
     /**
-     * @param {import("../types.js").Node} node
+     * @param {import("./types.js").Node | import("./types.js").Keyed} node
      * @param {unknown[]} values
      */
     constructor(node, values) {
@@ -30,14 +33,9 @@ export default document => {
   var empty = freeze([]);
   
   const { isArray } = Array;
+  const isObject = value => value != null && typeof value === 'object';
+  
   const attribute = Symbol();
-  
-  const isObject = value => value && typeof value === 'object';
-  
-  const diffNode = (stack, hole) => [
-    stack.as(hole),
-    stack.get(hole),
-  ];
   
   const direct = Map => class extends Map {
     set(key, value) {
@@ -46,41 +44,46 @@ export default document => {
     }
   };
   
-  const asString = value => value == null ? '' : value;
-  
-  const asStringProp = prop => (ref, value) => {
-    ref[prop] = asString(value);
-  };
-  
   /**
    * @typedef {Object} ReplaceChildren
    * @prop {(node:Node) => void} replaceChildren
    */
   
-  const array$1 = ({ cache }, values) => {
-    const { length } = values;
+  const diff$3 = (stack, hole) => [
+    stack.as(hole),
+    stack.get(hole),
+  ];
+  
+  /**
+   * @param {Stack[]} cache
+   * @param {import("../types.js").Hole[]} holes
+   */
+  const array$1 = (cache, holes) => {
+    const { length } = holes;
     if (length < cache.length)
       cache.splice(length);
     for (let i = 0; i < length; i++) {
-      values[i] = diffNode(
+      holes[i] = diff$3(
         cache[i] || (cache[i] = new Stack(HOLE)),
-        values[i]
+        holes[i]
       )[1];
     }
   };
   
   class Stack {
+    static diff = diff$3;
+  
     /**
      * @param {STACK | ANY | ARRAY | HOLE | OBJECT} type
      */
     constructor(type) {
       this.type = type;
-      /** @type {import("../types.js").ParsedNode?} */
+      /** @type {import("../types.js").Node | import("../types.js").Keyed | null} */
       this.node = null;
-      /** @type {import("../types.js").Info | import("../types.js").Keyed | null} */
+      /** @type {{ update: (values: unknown[]) => GenericNode }?} */
       this.value = null;
       /** @type {Stack[]} */
-      this.cache = type === ARRAY ? [] : empty;
+      this.cache = empty;
     }
   
     /**
@@ -102,39 +105,39 @@ export default document => {
      * @returns {import("../types.js").GenericNode}
      */
     get({ values }) {
-      const { cache, value, node: { paths } } = this;
+      const { node: { paths }, value, cache } = this;
       for (let j = 0, i = 0; i < paths.length; i++) {
-        const path = paths[i];
-        if (path.type === COMMENT_NODE) {
-          const prev = cache[j] || (cache[j] = new Stack(path.extra));
-          j++;
-          switch (prev.type) {
-            case HOLE: {
-              const [diff, node] = diffNode(prev, values[i]);
-              values[i] = diff ? node.valueOf() : node;
-              break;
-            }
-            case ARRAY: {
-              array$1(prev, values[i]);
-              break;
-            }
-            case OBJECT: {
-              const curr = values[i];
-              if (prev.value !== curr) {
-                prev.value = curr;
-                values[i] = curr.valueOf();
-              }
-              break;
-            }
+        const { type, extra } = paths[i];
+        if (type === COMMENT_NODE) {
+          if (extra === HOLE) {
+            const [different, node] = diff$3(
+              cache[j] || (cache[j] = new Stack(extra)),
+              values[i]
+            );
+            values[i] = different ? node.valueOf() : node;
+            j++;
           }
+          else if (extra === ARRAY) {
+            array$1(
+              cache[j] || (cache[j] = []),
+              values[i]
+            );
+            j++;
+          }
+          // TODO: not sure about this one ...
+          // else if (extra === OBJECT) {
+          //   const curr = values[i];
+          //   if (cache[j] != curr) {
+          //     cache[j] = curr;
+          //     values[i] = curr.valueOf();
+          //   }
+          //   j++;
+          // }
         }
       }
       return value.update(values);
     }
   }
-  
-  const TEXT_ELEMENTS = /^(?:plaintext|script|style|textarea|title|xmp)$/i;
-  const VOID_ELEMENTS = /^(?:area|base|br|col|embed|hr|img|input|keygen|link|menuitem|meta|param|source|track|wbr)$/i;
   
   const elements = /<([a-zA-Z0-9]+[a-zA-Z0-9:._-]*)([^>]*?)(\/?)>/g;
   const attributes = /([^\s\\>"'=]+)\s*=\s*(['"]?)\x01/g;
@@ -199,14 +202,13 @@ export default document => {
   
   /** @extends {DocumentFragment} for real! */
   class Fragment extends native(DocumentFragment) {
-    // static u/domdiff utility
-    static diff(node, op) {
-      return active && node instanceof Fragment ?
-        ((1 / op) < 0 ?
-          (op ? /* remove */ node.#remove(true) : /* after */ node.#lastChild) :
-          (op ? /* insert */ node.valueOf() : /* before */ node.#firstChild)) :
-        node;
-    }
+    // u/domdiff helper
+    static diff = (node, op) => active && node instanceof Fragment ?
+      ((1 / op) < 0 ?
+        (op ? /* remove */ node.#remove(true) : /* after */ node.#lastChild) :
+        (op ? /* insert */ node.valueOf() : /* before */ node.#firstChild)) :
+      node
+    ;
   
     // privates
     #firstChild;  // the virtual firstChild as reference
@@ -298,7 +300,7 @@ export default document => {
       for (let prevPath = empty, node = dom, i = 0; i < length; i++) {
         const { type, path, extra } = paths[i];
         // speed up multiple attributes per same node
-        if (path !== prevPath) {
+        if (prevPath !== path) {
           prevPath = path;
           node = dom;
           for (let { length: i } = path; i--; node = node.childNodes[path[i]]);
@@ -403,13 +405,12 @@ export default document => {
    */
   const info = (type, path, extra) => ({ type, path, extra });
   
-  const kv = (k, v) => ({ k, v });
-  const keyValue = kv('key', '');
+  const keyValue = ['key', ''];
   const prefix = 'isµ';
   
   /**
    * @param {boolean} SVG indicate SVG parser VS an HTML one
-   * @returns {(template:TemplateStringsArray|string[]) => Node}
+   * @returns {(template:TemplateStringsArray|string[]) => import("./types.js").Node | import("./types.js").Keyed}
    */
   var parser = SVG => {
     const content = SVG ? svg$1 : html$1;
@@ -448,9 +449,10 @@ export default document => {
                 else {
                   let c = name[0];
                   let k = c in attr ? c : (name in attr ? name : attribute);
-                  extra = kv(k, c === k ? name.slice(1) : name);
+                  extra = [k, c === k ? name.slice(1) : name];
                 }
-                paths[i++] = info(ATTRIBUTE_NODE, path || (path = map(target)), extra);
+                path ??= map(target);
+                paths[i++] = info(ATTRIBUTE_NODE, path, extra);
                 target.removeAttribute(search);
               }
               // text only elements:
@@ -491,6 +493,7 @@ export default document => {
   const DirectWeakMap = direct(WeakMap);
   
   const dwm = new DirectWeakMap;
+  const { diff: diff$2 } = Stack;
   
   let rendering = null;
   
@@ -503,8 +506,8 @@ export default document => {
     const prev = rendering;
     rendering = dwm.get(where) || dwm.set(where, new Stack(STACK));
     try {
-      const [diff, node] = diffNode(rendering, what());
-      if (diff) where.replaceChildren(node.valueOf());
+      const [different, node] = diff$2(rendering, what());
+      if (different) where.replaceChildren(node.valueOf());
     }
     finally {
       rendering = prev;
@@ -522,7 +525,7 @@ export default document => {
     const dwm = new DirectWeakMap;
     const parse = parser(SVG);
     const update = {
-      [ATTRIBUTE_NODE]: (node, once, { k, v }) => attr[k](node, v, once, SVG),
+      [ATTRIBUTE_NODE]: (node, once, [k, v]) => attr[k](node, v, once, SVG),
       [COMMENT_NODE]: (node, once, hint) => diff(node, hint, once, SVG),
       [ELEMENT_NODE]: text,
     };
@@ -532,9 +535,13 @@ export default document => {
     )
   };
   
+  const { entries } = Object;
+  
+  const key = () => key;
+  
   const args = value => isArray(value) ? value : [value];
   
-  const handleListener = (node, prev, type) => value => {
+  const handleListener = (node, type, prev) => value => {
     const curr = args(value);
     if (curr[0] != prev[0]) {
       if (prev[0]) node.removeEventListener(type, ...prev);
@@ -543,84 +550,61 @@ export default document => {
     }
   };
   
-  const key = () => key;
-  
-  const setAttribute = (node, value, name) => {
+  const setAttribute = (node, name, value) => {
     if (value == null) node.removeAttribute(name);
     else node.setAttribute(name, value);
   };
   
-  const setClassName = asStringProp('className');
-  const setStyle = asStringProp('cssText');
-  
-  const setProperty = (node, value, prop) => {
+  const setProperty = (node, prop, value) => {
     node[prop] = value;
   };
   
-  const storeValueFor = (callback, node, prev, name) => curr => {
-    if (prev != curr) {
-      prev = curr;
-      callback(node, curr, name);
-    }
+  const storeValueFor = (callback, node, name, prev) => curr => {
+    if (prev != curr) callback(node, name, (prev = curr));
   };
   
-  const toggleAttribute = (node, value, name) => {
+  const toggleAttribute = (node, name, value) => {
     node.toggleAttribute(name, value);
   };
   
-  // pretty much what uhtml exports except
-  // onclick and others are not that smart
-  // use .onclick or others to signal accessors intent
-  // (explicit is better than implicit and related reason)
+  const noListener = [null];
+  
   var attr = {
     __proto__: null,
-    // this is by default a no-op as it does nothing on updates but
-    // it's passed value is used to return the keyed node
-    key,
-    // default attributes handler
-    [attribute]: (node, name, once) => once ?
-      value => setAttribute(node, value, name) :
-      storeValueFor(setAttribute, node, null, name)
-    ,
-    // special attributes handlers
+    // event listener
     ['@']: (node, type, once) => once ?
       value => node.addEventListener(type, ...args(value)) :
-      handleListener(node, [null], type)
+      handleListener(node, type, noListener)
     ,
+    // attribute toggler
     ['?']: (node, name, once) => once ?
-      value => toggleAttribute(node, value, name) :
-      storeValueFor(toggleAttribute, node, false, name)
+      value => toggleAttribute(node, name, value) :
+      storeValueFor(toggleAttribute, node, name, false)
     ,
+    // direct property assignment
     ['.']: (node, prop, once) => once ?
-      value => setProperty(node, value, prop) :
-      storeValueFor(setProperty, node, null, prop)
+      value => setProperty(node, prop, value) :
+      storeValueFor(setProperty, node, prop, null)
     ,
-    // augmented attributes handler
+    // default attributes handler
+    [attribute]: (node, name, once) => once ?
+      value => setAttribute(node, name, value) :
+      storeValueFor(setAttribute, node, name, null)
+    ,
+    // key handler as no-op
+    key,
+    // aria attributes as object literal
     aria: node => props => {
-      for (const key in props) {
-        const name = key === 'role' ? key : `aria-${key}`;
-        setAttribute(node, props[key], name);
-      }
+      for (let [key, value] of entries(props))
+        setAttribute(node, key === 'role' ? key : `aria-${key}`, value);
     },
-    class: (node, name, once, SVG) => (once || SVG) ?
-      value => setAttribute(node, value, name) :
-      storeValueFor(setClassName, node, '')
-    ,
+    // dataset attributes as object literals
     data: ({ dataset }) => props => {
-      for (const key in props) {
-        const value = props[key];
+      for (const [key, value] of entries(props)) {
         if (value == null) delete dataset[key];
         else dataset[key] = value;
       }
     },
-    ref: node => value => {
-      if (typeof value === 'function') value(node);
-      else value.current = node;
-    },
-    style: (node, name, once) => (once || SVG) ?
-      value => setAttribute(node, value, name) :
-      storeValueFor(setStyle, node.style, '')
-    ,
   };
   
   /**
@@ -786,8 +770,8 @@ export default document => {
     node.replaceWith(text);
     return curr => {
       if (curr != prev) {
+        text.data = curr ?? '';
         prev = curr;
-        text.data = asString(curr);
       }
     };
   };
@@ -803,11 +787,10 @@ export default document => {
     );
   };
   
-  const object = node => curr => {
-    if (node !== curr) {
-      const value = curr.valueOf();
-      node.replaceWith(value);
-      node = value;
+  const object = prev => curr => {
+    if (prev !== curr) {
+      prev.replaceWith(curr.valueOf());
+      prev = curr;
     }
   };
   
@@ -822,17 +805,15 @@ export default document => {
       array(node, empty)(value);
       node.remove();
     }
-    else if (hint === ANY) {
-      any(node, '')(value);
-    }
-    else {
-      node.replaceWith(value.valueOf());
-    }
+    else if (hint === ANY) any(node, '')(value);
+    else object(node)(value);
   };
   
   var diff$1 = (node, hint, once) => (once ? oneOff$1 : multi$1)(node, hint);
   
-  const setContent = asStringProp('textContent');
+  const setContent = (node, content) => {
+    node.textContent = content ?? '';
+  };
   
   const multi = (node, prev) => curr => {
     if (prev != curr) {

@@ -1,20 +1,14 @@
-
-import {
-  ATTRIBUTE_NODE as A,
-  COMMENT_NODE,
-  ELEMENT_NODE,
-} from 'domconstants/constants';
-
-import { TEXT_ELEMENTS } from 'domconstants/re';
-
 import {
   ANY,
   ARRAY,
+  ATTRIBUTE_NODE,
+  COMMENT_NODE,
+  ELEMENT_NODE,
   HOLE,
   OBJECT,
+  TEXT_ELEMENTS,
 } from './constants.js';
 
-import empty from '@webreflection/empty/array';
 import parser from '@webreflection/uparser';
 
 import Hole from './classes/hole.js';
@@ -22,7 +16,7 @@ import Keyed from './classes/keyed.js';
 import Node from './classes/node.js';
 
 import { html, svg } from './create.js';
-import { attribute, isArray, isObject } from './utils.js';
+import { attribute, empty, isArray, isObject } from './utils.js';
 
 const { indexOf } = empty;
 
@@ -53,7 +47,7 @@ const prefix = 'isµ';
 
 /**
  * @param {boolean} SVG indicate SVG parser VS an HTML one
- * @returns {(template:TemplateStringsArray|string[]) => Node}
+ * @returns {(template:TemplateStringsArray|string[]) => import("./types.js").Node | import("./types.js").Keyed}
  */
 export default SVG => {
   const content = SVG ? svg : html;
@@ -94,7 +88,8 @@ export default SVG => {
                 let k = c in attr ? c : (name in attr ? name : attribute);
                 extra = [k, c === k ? name.slice(1) : name];
               }
-              paths[i++] = info(A, path || (path = map(target)), extra);
+              path ??= map(target);
+              paths[i++] = info(ATTRIBUTE_NODE, path, extra);
               target.removeAttribute(search);
             }
             // text only elements:

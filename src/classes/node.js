@@ -1,8 +1,8 @@
-import { DOCUMENT_FRAGMENT_NODE } from 'domconstants/constants';
-
-import empty from '@webreflection/empty/array';
+import { DOCUMENT_FRAGMENT_NODE } from '../constants.js';
 
 import Fragment from './fragment.js';
+
+import { empty } from '../utils.js';
 
 export default class Node {
   /**
@@ -29,7 +29,7 @@ export default class Node {
     for (let prevPath = empty, node = dom, i = 0; i < length; i++) {
       const { type, path, extra } = paths[i];
       // speed up multiple attributes per same node
-      if (path !== prevPath) {
+      if (prevPath !== path) {
         prevPath = path;
         node = dom;
         for (let { length: i } = path; i--; node = node.childNodes[path[i]]);

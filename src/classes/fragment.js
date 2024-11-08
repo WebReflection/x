@@ -1,4 +1,4 @@
-import { COMMENT_NODE } from 'domconstants/constants';
+import { COMMENT_NODE } from '../constants.js';
 
 import native from 'custom-function/factory';
 
@@ -6,14 +6,13 @@ let active = false;
 
 /** @extends {DocumentFragment} for real! */
 export default class Fragment extends native(DocumentFragment) {
-  // static u/domdiff utility
-  static diff(node, op) {
-    return active && node instanceof Fragment ?
-      ((1 / op) < 0 ?
-        (op ? /* remove */ node.#remove(true) : /* after */ node.#lastChild) :
-        (op ? /* insert */ node.valueOf() : /* before */ node.#firstChild)) :
-      node;
-  }
+  // u/domdiff helper
+  static diff = (node, op) => active && node instanceof Fragment ?
+    ((1 / op) < 0 ?
+      (op ? /* remove */ node.#remove(true) : /* after */ node.#lastChild) :
+      (op ? /* insert */ node.valueOf() : /* before */ node.#firstChild)) :
+    node
+  ;
 
   // privates
   #firstChild;  // the virtual firstChild as reference

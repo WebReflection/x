@@ -1,18 +1,18 @@
 import { ANY, ARRAY } from '../constants.js';
 
-import empty from '@webreflection/empty/array';
 import udomdiff from 'udomdiff';
 
 import Fragment from '../classes/fragment.js';
-import { asString } from '../utils.js';
+
+import { empty } from '../utils.js';
 
 const any = (node, prev) => {
   const text = document.createTextNode(prev);
   node.replaceWith(text);
   return curr => {
     if (curr != prev) {
+      text.data = curr ?? '';
       prev = curr;
-      text.data = asString(curr);
     }
   };
 };
@@ -28,11 +28,10 @@ const array = (node, prev) => curr => {
   );
 };
 
-const object = node => curr => {
-  if (node !== curr) {
-    const value = curr.valueOf();
-    node.replaceWith(value);
-    node = value;
+const object = prev => curr => {
+  if (prev !== curr) {
+    prev.replaceWith(curr.valueOf());
+    prev = curr;
   }
 };
 
@@ -47,12 +46,8 @@ const oneOff = (node, hint) => value => {
     array(node, empty)(value);
     node.remove();
   }
-  else if (hint === ANY) {
-    any(node, '')(value);
-  }
-  else {
-    node.replaceWith(value.valueOf());
-  }
+  else if (hint === ANY) any(node, '')(value);
+  else object(node)(value);
 };
 
 export default (node, hint, once) => (once ? oneOff : multi)(node, hint);

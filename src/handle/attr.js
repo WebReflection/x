@@ -1,8 +1,22 @@
-import { attribute, asStringProp, isArray } from '../utils.js';
+import { attribute, isArray } from '../utils.js';
 
+const { entries } = Object;
+
+const key = () => key;
+
+/**
+ * @param {unknown | unknown[]} value
+ * @returns {unknown[]}
+ */
 const args = value => isArray(value) ? value : [value];
 
-const handleListener = (node, prev, type) => value => {
+/**
+ * @param {Element} node
+ * @param {string} type
+ * @param {unknown[]} prev
+ * @returns {(value:unknown | unknown[]) => void}
+ */
+const handleListener = (node, type, prev) => value => {
   const curr = args(value);
   if (curr[0] != prev[0]) {
     if (prev[0]) node.removeEventListener(type, ...prev);
@@ -11,82 +25,119 @@ const handleListener = (node, prev, type) => value => {
   }
 };
 
-const key = () => key;
-
-const setAttribute = (node, value, name) => {
+/**
+ * Set or remove an attribute
+ * @param {Element} node
+ * @param {string} name
+ * @param {unknown} value
+ */
+const setAttribute = (node, name, value) => {
   if (value == null) node.removeAttribute(name);
   else node.setAttribute(name, value);
 };
 
-const setClassName = asStringProp('className');
-const setStyle = asStringProp('cssText');
-
-const setProperty = (node, value, prop) => {
+/**
+ * Directly set an element property as value
+ * @param {Element} node
+ * @param {string} prop
+ * @param {unknown} value
+ */
+const setProperty = (node, prop, value) => {
   node[prop] = value;
 };
 
-const storeValueFor = (callback, node, prev, name) => curr => {
-  if (prev != curr) {
-    prev = curr;
-    callback(node, curr, name);
-  }
+/**
+ * @template {Function} T
+ * @param {T} callback
+ * @param {Element} node
+ * @param {string} name
+ * @param {unknown} prev
+ * @returns {(value:unknown) => void}
+ */
+const storeValueFor = (callback, node, name, prev) => curr => {
+  if (prev != curr) callback(node, name, (prev = curr));
 };
 
-const toggleAttribute = (node, value, name) => {
+/**
+ * Toggle an element attribute
+ * @param {Element} node
+ * @param {string} name
+ * @param {boolean} value
+ */
+const toggleAttribute = (node, name, value) => {
   node.toggleAttribute(name, value);
 };
 
-// pretty much what uhtml exports except
-// onclick and others are not that smart
-// use .onclick or others to signal accessors intent
-// (explicit is better than implicit and related reason)
+const noListener = [null];
+
 export default {
   __proto__: null,
-  // this is by default a no-op as it does nothing on updates but
-  // it's passed value is used to return the keyed node
-  key,
-  // default attributes handler
+  // DEFAULT ATTRIBUTE HANDLER
+  /**
+   * @param {Element} node
+   * @param {string} name
+   * @param {boolean} once
+   * @returns
+   */
   [attribute]: (node, name, once) => once ?
-    value => setAttribute(node, value, name) :
-    storeValueFor(setAttribute, node, null, name)
+    value => setAttribute(node, name, value) :
+    storeValueFor(setAttribute, node, name, null)
   ,
-  // special attributes handlers
+  // SINGLE CHAR SHORTCUTS
+  /**
+   * Events listeners
+   * @param {Element} node
+   * @param {string} type
+   * @param {boolean} once
+   * @returns
+   */
   ['@']: (node, type, once) => once ?
     value => node.addEventListener(type, ...args(value)) :
-    handleListener(node, [null], type)
+    handleListener(node, type, noListener)
   ,
+  /**
+   * Attribute toggle
+   * @param {Element} node
+   * @param {string} name
+   * @param {boolean} once
+   * @returns
+   */
   ['?']: (node, name, once) => once ?
-    value => toggleAttribute(node, value, name) :
-    storeValueFor(toggleAttribute, node, false, name)
+    value => toggleAttribute(node, name, value) :
+    storeValueFor(toggleAttribute, node, name, false)
   ,
+  /**
+   * Direct accessor
+   * @param {Element} node
+   * @param {string} prop
+   * @param {boolean} once
+   * @returns
+   */
   ['.']: (node, prop, once) => once ?
-    value => setProperty(node, value, prop) :
-    storeValueFor(setProperty, node, null, prop)
+    value => setProperty(node, prop, value) :
+    storeValueFor(setProperty, node, prop, null)
   ,
-  // augmented attributes handler
+  // SPECIAL KEY HANDLER
+  key,
+  // SPECIAL ATTRIBUTES
+  /**
+   * Aria attributes as object literal
+   * @param {Element} node
+   * @returns
+   */
   aria: node => props => {
-    for (const key in props) {
-      const name = key === 'role' ? key : `aria-${key}`;
-      setAttribute(node, props[key], name);
-    }
+    for (let [key, value] of entries(props))
+      setAttribute(node, key === 'role' ? key : `aria-${key}`, value);
   },
-  class: (node, name, once, SVG) => (once || SVG) ?
-    value => setAttribute(node, value, name) :
-    storeValueFor(setClassName, node, '')
-  ,
+  /**
+   * Dataset attributes as object literal
+   * @param {Element} node
+   * @returns
+   */
   data: ({ dataset }) => props => {
-    for (const key in props) {
-      const value = props[key];
+    for (const [key, value] of entries(props)) {
       if (value == null) delete dataset[key];
       else dataset[key] = value;
     }
   },
-  ref: node => value => {
-    if (typeof value === 'function') value(node);
-    else value.current = node;
-  },
-  style: (node, name, once) => (once || SVG) ?
-    value => setAttribute(node, value, name) :
-    storeValueFor(setStyle, node.style, '')
-  ,
 };

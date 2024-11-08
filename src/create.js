@@ -1,4 +1,4 @@
-import { COMMENT_NODE } from 'domconstants/constants';
+import { COMMENT_NODE } from './constants.js';
 
 const getContent = fragment => {
   const { firstChild: $ } = fragment;

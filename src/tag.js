@@ -1,15 +1,14 @@
 import {
   ATTRIBUTE_NODE,
   COMMENT_NODE,
-  ELEMENT_NODE
-} from 'domconstants/constants';
-
-import { STACK } from './constants.js';
+  ELEMENT_NODE,
+  STACK
+} from './constants.js';
 
 import Hole from './classes/hole.js';
 import Stack from './classes/stack.js';
 
-import { direct, diffNode } from './utils.js';
+import { direct } from './utils.js';
 import parser from './parser.js';
 
 /**
@@ -30,6 +29,7 @@ const many = (node, values) => new Hole(node, values);
 const DirectWeakMap = direct(WeakMap);
 
 const dwm = new DirectWeakMap;
+const { diff } = Stack;
 
 let rendering = null;
 
@@ -42,8 +42,8 @@ export const render = (where, what) => {
   const prev = rendering;
   rendering = dwm.get(where) || dwm.set(where, new Stack(STACK));
   try {
-    const [diff, node] = diffNode(rendering, what());
-    if (diff) where.replaceChildren(node.valueOf());
+    const [different, node] = diff(rendering, what());
+    if (different) where.replaceChildren(node.valueOf());
   }
   finally {
     rendering = prev;

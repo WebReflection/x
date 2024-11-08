@@ -1,6 +1,6 @@
 export default class Hole {
   /**
-   * @param {import("../types.js").Node} node
+   * @param {import("./types.js").Node | import("./types.js").Keyed} node
    * @param {unknown[]} values
    */
   constructor(node, values) {

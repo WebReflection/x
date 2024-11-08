@@ -1,23 +1,15 @@
+import empty from '@webreflection/empty/array';
+
 const { isArray } = Array;
+const isObject = value => value != null && typeof value === 'object';
+
 const attribute = Symbol();
-export { isArray, attribute };
 
-export const isObject = value => value && typeof value === 'object';
-
-export const diffNode = (stack, hole) => [
-  stack.as(hole),
-  stack.get(hole),
-];
-
-export const direct = Map => class extends Map {
+const direct = Map => class extends Map {
   set(key, value) {
     super.set(key, value);
     return value;
   }
 };
 
-export const asString = value => value == null ? '' : value;
-
-export const asStringProp = prop => (ref, value) => {
-  ref[prop] = asString(value);
-};
+export { attribute, direct, empty, isArray, isObject };

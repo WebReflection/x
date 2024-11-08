@@ -1,6 +1,6 @@
-import { asStringProp } from '../utils.js';
-
-const setContent = asStringProp('textContent');
+const setContent = (node, content) => {
+  node.textContent = content ?? '';
+};
 
 const multi = (node, prev) => curr => {
   if (prev != curr) {
