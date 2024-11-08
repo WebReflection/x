@@ -275,6 +275,18 @@ export default document => {
     }
   }
   
+  // class NodeInfo {
+  //   constructor(node, updates) {
+  //     this.node = node;
+  //     this.updates = updates;
+  //   }
+  //   update(values) {
+  //     const { node, updates } = this;
+  //     for (let i = 0; i < updates.length; i++) updates[i](values[i]);
+  //     return node;
+  //   }
+  // }
+  
   class Node {
     /**
      * @param {import("../types.js").GenericNode} node
@@ -309,10 +321,6 @@ export default document => {
       }
       if (type === DOCUMENT_FRAGMENT_NODE) dom = new Fragment(dom);
       return {
-        /**
-         * @param {unknown[]} values
-         * @returns
-         */
         update: values => {
           for (let i = 0; i < length; i++) updates[i](values[i]);
           return dom;
@@ -321,9 +329,26 @@ export default document => {
     }
   }
   
-  const drop = ([map, value]) => { map.delete(value); };
+  const fr = new FinalizationRegistry(([map, value]) => { map.delete(value); });
   
-  let fr;
+  // class KeyedInfo {
+  //   constructor({ key, map }, create) {
+  //     this.key = key;
+  //     this.map = map;
+  //     this.create = create;
+  //   }
+  //   update(values) {
+  //     const { key, map, create } = this;
+  //     const value = values[key];
+  //     let info = map.get(value);
+  //     if (!info) {
+  //       info = create();
+  //       map.set(value, info);
+  //       fr.register(this, [map, value]);
+  //     }
+  //     return info.update(values);
+  //   }
+  // }
   
   class Keyed extends Node {
     constructor(node, paths, update, key) {
@@ -337,19 +362,14 @@ export default document => {
      * @returns {{update: (values: unknown[]) => GenericNode}}
      */
     create(once) {
+      const { key, map } = this;
       const wrap = {
-        /**
-         * @param {unknown[]} values 
-         * @returns
-         */
         update: values => {
-          const { key, map } = this;
           const value = values[key];
-          let info = map.get(value), hook = !info;
-          if (hook) {
+          let info = map.get(value);
+          if (!info) {
             info = super.create(once);
             map.set(value, info);
-            if (!fr) fr = new FinalizationRegistry(drop);
             fr.register(wrap, [map, value]);
           }
           return info.update(values);

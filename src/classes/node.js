@@ -4,6 +4,18 @@ import Fragment from './fragment.js';
 
 import { empty } from '../utils.js';
 
+// class NodeInfo {
+//   constructor(node, updates) {
+//     this.node = node;
+//     this.updates = updates;
+//   }
+//   update(values) {
+//     const { node, updates } = this;
+//     for (let i = 0; i < updates.length; i++) updates[i](values[i]);
+//     return node;
+//   }
+// }
+
 export default class Node {
   /**
    * @param {import("../types.js").GenericNode} node
@@ -38,10 +50,6 @@ export default class Node {
     }
     if (type === DOCUMENT_FRAGMENT_NODE) dom = new Fragment(dom);
     return {
-      /**
-       * @param {unknown[]} values
-       * @returns
-       */
       update: values => {
         for (let i = 0; i < length; i++) updates[i](values[i]);
         return dom;

@@ -2,6 +2,25 @@ import Node from './node.js';
 
 const fr = new FinalizationRegistry(([map, value]) => { map.delete(value); });
 
+// class KeyedInfo {
+//   constructor({ key, map }, create) {
+//     this.key = key;
+//     this.map = map;
+//     this.create = create;
+//   }
+//   update(values) {
+//     const { key, map, create } = this;
+//     const value = values[key];
+//     let info = map.get(value);
+//     if (!info) {
+//       info = create();
+//       map.set(value, info);
+//       fr.register(this, [map, value]);
+//     }
+//     return info.update(values);
+//   }
+// }
+
 export default class Keyed extends Node {
   constructor(node, paths, update, key) {
     super(node, paths, update);
@@ -14,13 +33,9 @@ export default class Keyed extends Node {
    * @returns {{update: (values: unknown[]) => GenericNode}}
    */
   create(once) {
+    const { key, map } = this;
     const wrap = {
-      /**
-       * @param {unknown[]} values 
-       * @returns
-       */
       update: values => {
-        const { key, map } = this;
         const value = values[key];
         let info = map.get(value);
         if (!info) {
