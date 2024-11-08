@@ -4,7 +4,6 @@ import {
   ELEMENT_NODE
 } from 'domconstants/constants';
 
-
 import { STACK } from './constants.js';
 
 import Hole from './classes/hole.js';
@@ -19,15 +18,14 @@ import parser from './parser.js';
  * @param {unknown[]} values
  * @returns {import("./types.js").ParsedNode}
  */
-const once = (node, update, values) => node.create(update, true).update(values);
+const once = (node, values) => node.create(true).update(values);
 
 /**
  * @param {import("./types.js").Node} node
- * @param {import("./types.js").Update} update
  * @param {unknown[]} values
  * @returns {import("./types.js").Hole}
  */
-const many = (node, update, values) => new Hole(node, update, values);
+const many = (node, values) => new Hole(node, values);
 
 const DirectWeakMap = direct(WeakMap);
 
@@ -37,7 +35,7 @@ let rendering = null;
 
 /**
  * @param {ParentNode} where
- * @param {() => import("../types.js").Hole} what
+ * @param {() => import("./types.js").Hole} what
  * @returns {ParentNode}
  */
 export const render = (where, what) => {
@@ -57,24 +55,18 @@ export const render = (where, what) => {
  * @param {boolean} SVG
  * @param {unknown} attr
  * @param {unknown} diff
- * @returns {import("./types.js").ParsedNode}
+ * @returns {(template:TemplateStringsArray | string[], ...interpolations:unknown) => import("./types.js").ParsedNode | import("./types.js").Hole}
  */
 export const tag = (SVG, attr, diff, text) => {
   const dwm = new DirectWeakMap;
   const parse = parser(SVG);
   const update = {
-    [ATTRIBUTE_NODE]: (node, once, { k, v }) => attr[k](node, v, once, SVG),
+    [ATTRIBUTE_NODE]: (node, once, [k, v]) => attr[k](node, v, once, SVG),
     [COMMENT_NODE]: (node, once, hint) => diff(node, hint, once, SVG),
     [ELEMENT_NODE]: text,
   };
-
-  /**
-   * @param {TemplateStringsArray | string[]} template
-   * @param {...unknown} values
-   */
-  return (template, ...values) => (rendering === null ? once : many)(
-    dwm.get(template) || dwm.set(template, parse(template, values, attr)),
-    update,
-    values,
+  return (t, ...v) => (rendering === null ? once : many)(
+    dwm.get(t) || dwm.set(t, parse(t, v, attr, update)),
+    v,
   )
 };

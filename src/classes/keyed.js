@@ -5,8 +5,8 @@ import { direct } from '../utils.js';
 const DirectMap = direct(Map);
 
 export default class Keyed extends Node {
-  constructor(type, node, paths, key) {
-    super(type, node, paths);
+  constructor(node, paths, update, key) {
+    super(node, paths, update);
     this.key = key;
     this.map = new DirectMap;
   }
@@ -15,7 +15,7 @@ export default class Keyed extends Node {
    * @param {boolean} once
    * @returns {{update: (values: unknown[]) => GenericNode}}
    */
-  create(update, once) {
+  create(once) {
     return {
       /**
        * @param {unknown[]} values 
@@ -24,9 +24,7 @@ export default class Keyed extends Node {
       update: values => {
         const { key, map } = this;
         const value = values[key];
-        const info = map.get(value) || map.set(
-          value, super.create(update, once)
-        );
+        const info = map.get(value) || map.set(value, super.create(once));
         return info.update(values);
       },
     };

@@ -24,10 +24,7 @@ import Node from './classes/node.js';
 import { html, svg } from './create.js';
 import { attribute, isArray, isObject } from './utils.js';
 
-const prefix = '_x';
 const { indexOf } = empty;
-
-let key = -1;
 
 /**
  * @param {Node} node
@@ -36,8 +33,8 @@ let key = -1;
 const map = node => {
   const path = [];
   let i = 0, parentNode;
-  while (parentNode = node.parentNode) {
-    i = path.push(indexOf.call(parentNode.childNodes, node));
+  while ((parentNode = node.parentNode)) {
+    path[i++] = indexOf.call(parentNode.childNodes, node);
     node = parentNode;
   }
   return i ? path : empty;
@@ -51,8 +48,8 @@ const map = node => {
  */
 const info = (type, path, extra) => ({ type, path, extra });
 
-const kv = (k, v) => ({ k, v });
-const keyValue = kv('key', '');
+const keyValue = ['key', ''];
+const prefix = 'isµ';
 
 /**
  * @param {boolean} SVG indicate SVG parser VS an HTML one
@@ -60,49 +57,45 @@ const keyValue = kv('key', '');
  */
 export default SVG => {
   const content = SVG ? svg : html;
-  return (template, values, attr) => {
+  return (template, values, attr, update) => {
     const text = parser(template, prefix, SVG);
     const node = content(text);
     const length = template.length - 1;
-    let paths = empty;
+    let paths = empty, key = -1, i = 0, tw, target;
     if (length) {
-      let tw, target, i = 0;
       paths = [];
       while (i < length) {
         target = tw?.nextNode() || node;
         switch (target.nodeType) {
           case COMMENT_NODE: {
             // holes
-            if (target.data === prefix + i) {
+            if (target.data === (prefix + i)) {
               const value = values[i];
-              const extra = isObject(value) ?
-                (value instanceof Hole ?
-                  HOLE : (isArray(value) ? ARRAY : OBJECT)) :
-                ANY
-              ;
-              paths.push(info(COMMENT_NODE, map(target), extra));
-              i++;
+              paths[i++] = info(
+                COMMENT_NODE,
+                map(target),
+                isObject(value) ?
+                  (value instanceof Hole ?
+                    HOLE : (isArray(value) ? ARRAY : OBJECT)) :
+                  ANY,
+              );
             }
             break;
           }
           case ELEMENT_NODE: {
             let path, search;
             // attributes
-            while (target.hasAttribute(search = prefix + i)) {
-              let extra;
+            while (target.hasAttribute((search = prefix + i))) {
               const name = target.getAttribute(search);
-              if (name === 'key') {
-                extra = keyValue;
-                key = i;
-              }
+              let extra = keyValue;
+              if (name === 'key') key = i;
               else {
                 let c = name[0];
                 let k = c in attr ? c : (name in attr ? name : attribute);
-                extra = kv(k, c === k ? name.slice(1) : name);
+                extra = [k, c === k ? name.slice(1) : name];
               }
-              paths.push(info(A, path || (path = map(target)), extra));
+              paths[i++] = info(A, path || (path = map(target)), extra);
               target.removeAttribute(search);
-              i++;
             }
             // text only elements:
             // plaintext, script, style, textarea, title, xmp
@@ -111,8 +104,7 @@ export default SVG => {
               TEXT_ELEMENTS.test(target.localName) &&
               target.textContent.trim() === `<!--${search}-->`
             ) {
-              paths.push(info(ELEMENT_NODE, path || map(target), null));
-              i++;
+              paths[i++] = info(ELEMENT_NODE, path || map(target), null);
             }
             break;
           }
@@ -121,8 +113,6 @@ export default SVG => {
       }
     }
     const Class = key < 0 ? Node : Keyed;
-    const parsed = new Class(node.nodeType, node, paths, key);
-    key = -1;
-    return parsed;
+    return new Class(node, paths, update, key);
   };
 };

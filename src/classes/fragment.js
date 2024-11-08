@@ -49,10 +49,12 @@ export default class Fragment extends native(DocumentFragment) {
   get parentNode() { return this.#lastChild.parentNode; }
 
   get childNodes() {
-    let firstChild = this.#firstChild;
+    let firstChild = this.#firstChild, i = 0;
     const childNodes = [firstChild], lastChild = this.#lastChild;
-    while (firstChild != lastChild)
-      childNodes.push(firstChild = firstChild.nextSibling);
+    while (firstChild != lastChild) {
+      firstChild = firstChild.nextSibling;
+      childNodes[i++] = firstChild;
+    }
     return childNodes;
   }
 

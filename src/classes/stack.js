@@ -47,11 +47,11 @@ export default class Stack {
    * @param {import("../types.js").Hole} hole
    * @returns {boolean}
    */
-  as({ node, update, values: { length } }) {
+  as({ node, values: { length } }) {
     const different = this.node !== node;
     if (different) {
       this.node = node;
-      this.value = node.create(update, false);
+      this.value = node.create(false);
       this.cache = length ? [] : empty;
     }
     return different;
@@ -78,14 +78,15 @@ export default class Stack {
             array(prev, values[i]);
             break;
           }
-          case OBJECT: {
-            const curr = values[i];
-            if (prev.value !== curr) {
-              prev.value = curr;
-              values[i] = curr.valueOf();
-            }
-            break;
-          }
+          // TODO: not sure about this one ... 
+          // case OBJECT: {
+          //   const curr = values[i];
+          //   if (prev.value !== curr) {
+          //     prev.value = curr;
+          //     values[i] = curr.valueOf();
+          //   }
+          //   break;
+          // }
         }
       }
     }

@@ -17,12 +17,10 @@ export default document => {
   class Hole {
     /**
      * @param {import("../types.js").Node} node
-     * @param {import("../types.js").Update} update
      * @param {unknown[]} values
      */
-    constructor(node, update, values) {
+    constructor(node, values) {
       this.node = node;
-      this.update = update;
       this.values = values;
     }
   }
@@ -89,11 +87,11 @@ export default document => {
      * @param {import("../types.js").Hole} hole
      * @returns {boolean}
      */
-    as({ node, update, values: { length } }) {
+    as({ node, values: { length } }) {
       const different = this.node !== node;
       if (different) {
         this.node = node;
-        this.value = node.create(update, false);
+        this.value = node.create(false);
         this.cache = length ? [] : empty;
       }
       return different;
@@ -244,10 +242,12 @@ export default document => {
     get parentNode() { return this.#lastChild.parentNode; }
   
     get childNodes() {
-      let firstChild = this.#firstChild;
+      let firstChild = this.#firstChild, i = 0;
       const childNodes = [firstChild], lastChild = this.#lastChild;
-      while (firstChild != lastChild)
-        childNodes.push(firstChild = firstChild.nextSibling);
+      while (firstChild != lastChild) {
+        firstChild = firstChild.nextSibling;
+        childNodes[i++] = firstChild;
+      }
       return childNodes;
     }
   
@@ -275,14 +275,14 @@ export default document => {
   
   class Node {
     /**
-     * @param {1 | 3 | 8 | 11} type
      * @param {import("../types.js").GenericNode} node
      * @param {import("../types.js").Path[]} paths
      */
-    constructor(type, node, paths) {
-      this.type = type;
+    constructor(node, paths, update) {
+      this.type = node.nodeType;
       this.node = node;
       this.paths = paths;
+      this.update = update;
     }
   
     /**
@@ -290,8 +290,8 @@ export default document => {
      * @param {boolean} once
      * @returns
      */
-    create(update, once) {
-      const { type, node, paths } = this;
+    create(once) {
+      const { type, node, paths, update } = this;
       const { length } = paths;
       const updates = length ? [] : empty;
       let dom = document.importNode(node, true);
@@ -322,8 +322,8 @@ export default document => {
   const DirectMap = direct(Map);
   
   class Keyed extends Node {
-    constructor(type, node, paths, key) {
-      super(type, node, paths);
+    constructor(node, paths, update, key) {
+      super(node, paths, update);
       this.key = key;
       this.map = new DirectMap;
     }
@@ -332,7 +332,7 @@ export default document => {
      * @param {boolean} once
      * @returns {{update: (values: unknown[]) => GenericNode}}
      */
-    create(update, once) {
+    create(once) {
       return {
         /**
          * @param {unknown[]} values 
@@ -341,9 +341,7 @@ export default document => {
         update: values => {
           const { key, map } = this;
           const value = values[key];
-          const info = map.get(value) || map.set(
-            value, super.create(update, once)
-          );
+          const info = map.get(value) || map.set(value, super.create(once));
           return info.update(values);
         },
       };
@@ -381,10 +379,7 @@ export default document => {
     return getContent(range.createContextualFragment(text));
   };
   
-  const prefix = '_x';
   const { indexOf } = empty;
-  
-  let key$1 = -1;
   
   /**
    * @param {Node} node
@@ -393,8 +388,8 @@ export default document => {
   const map = node => {
     const path = [];
     let i = 0, parentNode;
-    while (parentNode = node.parentNode) {
-      i = path.push(indexOf.call(parentNode.childNodes, node));
+    while ((parentNode = node.parentNode)) {
+      path[i++] = indexOf.call(parentNode.childNodes, node);
       node = parentNode;
     }
     return i ? path : empty;
@@ -410,6 +405,7 @@ export default document => {
   
   const kv = (k, v) => ({ k, v });
   const keyValue = kv('key', '');
+  const prefix = 'isµ';
   
   /**
    * @param {boolean} SVG indicate SVG parser VS an HTML one
@@ -417,49 +413,45 @@ export default document => {
    */
   var parser = SVG => {
     const content = SVG ? svg$1 : html$1;
-    return (template, values, attr) => {
+    return (template, values, attr, update) => {
       const text = parser$1(template, prefix, SVG);
       const node = content(text);
       const length = template.length - 1;
-      let paths = empty;
+      let paths = empty, key = -1, i = 0, tw, target;
       if (length) {
-        let tw, target, i = 0;
         paths = [];
         while (i < length) {
           target = tw?.nextNode() || node;
           switch (target.nodeType) {
             case COMMENT_NODE: {
               // holes
-              if (target.data === prefix + i) {
+              if (target.data === (prefix + i)) {
                 const value = values[i];
-                const extra = isObject(value) ?
-                  (value instanceof Hole ?
-                    HOLE : (isArray(value) ? ARRAY : OBJECT)) :
-                  ANY
-                ;
-                paths.push(info(COMMENT_NODE, map(target), extra));
-                i++;
+                paths[i++] = info(
+                  COMMENT_NODE,
+                  map(target),
+                  isObject(value) ?
+                    (value instanceof Hole ?
+                      HOLE : (isArray(value) ? ARRAY : OBJECT)) :
+                    ANY,
+                );
               }
               break;
             }
             case ELEMENT_NODE: {
               let path, search;
               // attributes
-              while (target.hasAttribute(search = prefix + i)) {
-                let extra;
+              while (target.hasAttribute((search = prefix + i))) {
                 const name = target.getAttribute(search);
-                if (name === 'key') {
-                  extra = keyValue;
-                  key$1 = i;
-                }
+                let extra = keyValue;
+                if (name === 'key') key = i;
                 else {
                   let c = name[0];
                   let k = c in attr ? c : (name in attr ? name : attribute);
                   extra = kv(k, c === k ? name.slice(1) : name);
                 }
-                paths.push(info(ATTRIBUTE_NODE, path || (path = map(target)), extra));
+                paths[i++] = info(ATTRIBUTE_NODE, path || (path = map(target)), extra);
                 target.removeAttribute(search);
-                i++;
               }
               // text only elements:
               // plaintext, script, style, textarea, title, xmp
@@ -468,8 +460,7 @@ export default document => {
                 TEXT_ELEMENTS.test(target.localName) &&
                 target.textContent.trim() === `<!--${search}-->`
               ) {
-                paths.push(info(ELEMENT_NODE, path || map(target), null));
-                i++;
+                paths[i++] = info(ELEMENT_NODE, path || map(target), null);
               }
               break;
             }
@@ -477,10 +468,8 @@ export default document => {
           if (i < length && !tw) tw = document.createTreeWalker(node, 1 | 128);
         }
       }
-      const Class = key$1 < 0 ? Node : Keyed;
-      const parsed = new Class(node.nodeType, node, paths, key$1);
-      key$1 = -1;
-      return parsed;
+      const Class = key < 0 ? Node : Keyed;
+      return new Class(node, paths, update, key);
     };
   };
   
@@ -490,15 +479,14 @@ export default document => {
    * @param {unknown[]} values
    * @returns {import("./types.js").ParsedNode}
    */
-  const once = (node, update, values) => node.create(update, true).update(values);
+  const once = (node, values) => node.create(true).update(values);
   
   /**
    * @param {import("./types.js").Node} node
-   * @param {import("./types.js").Update} update
    * @param {unknown[]} values
    * @returns {import("./types.js").Hole}
    */
-  const many = (node, update, values) => new Hole(node, update, values);
+  const many = (node, values) => new Hole(node, values);
   
   const DirectWeakMap = direct(WeakMap);
   
@@ -508,7 +496,7 @@ export default document => {
   
   /**
    * @param {ParentNode} where
-   * @param {() => import("../types.js").Hole} what
+   * @param {() => import("./types.js").Hole} what
    * @returns {ParentNode}
    */
   const render = (where, what) => {
@@ -528,7 +516,7 @@ export default document => {
    * @param {boolean} SVG
    * @param {unknown} attr
    * @param {unknown} diff
-   * @returns {import("./types.js").ParsedNode}
+   * @returns {(template:TemplateStringsArray | string[], ...interpolations:unknown) => import("./types.js").ParsedNode | import("./types.js").Hole}
    */
   const tag = (SVG, attr, diff, text) => {
     const dwm = new DirectWeakMap;
@@ -538,15 +526,9 @@ export default document => {
       [COMMENT_NODE]: (node, once, hint) => diff(node, hint, once, SVG),
       [ELEMENT_NODE]: text,
     };
-  
-    /**
-     * @param {TemplateStringsArray | string[]} template
-     * @param {...unknown} values
-     */
-    return (template, ...values) => (rendering === null ? once : many)(
-      dwm.get(template) || dwm.set(template, parse(template, values, attr)),
-      update,
-      values,
+    return (t, ...v) => (rendering === null ? once : many)(
+      dwm.get(t) || dwm.set(t, parse(t, v, attr, update)),
+      v,
     )
   };
   

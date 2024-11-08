@@ -6,14 +6,14 @@ import Fragment from './fragment.js';
 
 export default class Node {
   /**
-   * @param {1 | 3 | 8 | 11} type
    * @param {import("../types.js").GenericNode} node
    * @param {import("../types.js").Path[]} paths
    */
-  constructor(type, node, paths) {
-    this.type = type;
+  constructor(node, paths, update) {
+    this.type = node.nodeType;
     this.node = node;
     this.paths = paths;
+    this.update = update;
   }
 
   /**
@@ -21,8 +21,8 @@ export default class Node {
    * @param {boolean} once
    * @returns
    */
-  create(update, once) {
-    const { type, node, paths } = this;
+  create(once) {
+    const { type, node, paths, update } = this;
     const { length } = paths;
     const updates = length ? [] : empty;
     let dom = document.importNode(node, true);
