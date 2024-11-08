@@ -321,13 +321,15 @@ export default document => {
     }
   }
   
-  const DirectMap = direct(Map);
+  const drop = ([map, value]) => { map.delete(value); };
+  
+  let fr;
   
   class Keyed extends Node {
     constructor(node, paths, update, key) {
       super(node, paths, update);
       this.key = key;
-      this.map = new DirectMap;
+      this.map = new Map;
     }
     /**
      * @param {import("../types.js").Update} update
@@ -335,7 +337,7 @@ export default document => {
      * @returns {{update: (values: unknown[]) => GenericNode}}
      */
     create(once) {
-      return {
+      const wrap = {
         /**
          * @param {unknown[]} values 
          * @returns
@@ -343,10 +345,17 @@ export default document => {
         update: values => {
           const { key, map } = this;
           const value = values[key];
-          const info = map.get(value) || map.set(value, super.create(once));
+          let info = map.get(value), hook = !info;
+          if (hook) {
+            info = super.create(once);
+            map.set(value, info);
+            if (!fr) fr = new FinalizationRegistry(drop);
+            fr.register(wrap, [map, value]);
+          }
           return info.update(values);
         },
       };
+      return wrap;
     }
   }
   
@@ -539,8 +548,18 @@ export default document => {
   
   const key = () => key;
   
+  /**
+   * @param {unknown | unknown[]} value
+   * @returns {unknown[]}
+   */
   const args = value => isArray(value) ? value : [value];
   
+  /**
+   * @param {Element} node
+   * @param {string} type
+   * @param {unknown[]} prev
+   * @returns {(value:unknown | unknown[]) => void}
+   */
   const handleListener = (node, type, prev) => value => {
     const curr = args(value);
     if (curr[0] != prev[0]) {
@@ -550,19 +569,45 @@ export default document => {
     }
   };
   
+  /**
+   * Set or remove an attribute
+   * @param {Element} node
+   * @param {string} name
+   * @param {unknown} value
+   */
   const setAttribute = (node, name, value) => {
     if (value == null) node.removeAttribute(name);
     else node.setAttribute(name, value);
   };
   
+  /**
+   * Directly set an element property as value
+   * @param {Element} node
+   * @param {string} prop
+   * @param {unknown} value
+   */
   const setProperty = (node, prop, value) => {
     node[prop] = value;
   };
   
+  /**
+   * @template {Function} T
+   * @param {T} callback
+   * @param {Element} node
+   * @param {string} name
+   * @param {unknown} prev
+   * @returns {(value:unknown) => void}
+   */
   const storeValueFor = (callback, node, name, prev) => curr => {
     if (prev != curr) callback(node, name, (prev = curr));
   };
   
+  /**
+   * Toggle an element attribute
+   * @param {Element} node
+   * @param {string} name
+   * @param {boolean} value
+   */
   const toggleAttribute = (node, name, value) => {
     node.toggleAttribute(name, value);
   };
@@ -571,34 +616,68 @@ export default document => {
   
   var attr = {
     __proto__: null,
-    // event listener
-    ['@']: (node, type, once) => once ?
-      value => node.addEventListener(type, ...args(value)) :
-      handleListener(node, type, noListener)
-    ,
-    // attribute toggler
-    ['?']: (node, name, once) => once ?
-      value => toggleAttribute(node, name, value) :
-      storeValueFor(toggleAttribute, node, name, false)
-    ,
-    // direct property assignment
-    ['.']: (node, prop, once) => once ?
-      value => setProperty(node, prop, value) :
-      storeValueFor(setProperty, node, prop, null)
-    ,
-    // default attributes handler
+    // DEFAULT ATTRIBUTE HANDLER
+    /**
+     * @param {Element} node
+     * @param {string} name
+     * @param {boolean} once
+     * @returns
+     */
     [attribute]: (node, name, once) => once ?
       value => setAttribute(node, name, value) :
       storeValueFor(setAttribute, node, name, null)
     ,
-    // key handler as no-op
+    // SINGLE CHAR SHORTCUTS
+    /**
+     * Events listeners
+     * @param {Element} node
+     * @param {string} type
+     * @param {boolean} once
+     * @returns
+     */
+    ['@']: (node, type, once) => once ?
+      value => node.addEventListener(type, ...args(value)) :
+      handleListener(node, type, noListener)
+    ,
+    /**
+     * Attribute toggle
+     * @param {Element} node
+     * @param {string} name
+     * @param {boolean} once
+     * @returns
+     */
+    ['?']: (node, name, once) => once ?
+      value => toggleAttribute(node, name, value) :
+      storeValueFor(toggleAttribute, node, name, false)
+    ,
+    /**
+     * Direct accessor
+     * @param {Element} node
+     * @param {string} prop
+     * @param {boolean} once
+     * @returns
+     */
+    ['.']: (node, prop, once) => once ?
+      value => setProperty(node, prop, value) :
+      storeValueFor(setProperty, node, prop, null)
+    ,
+    // SPECIAL KEY HANDLER
     key,
-    // aria attributes as object literal
+    // SPECIAL ATTRIBUTES
+    /**
+     * Aria attributes as object literal
+     * @param {Element} node
+     * @returns
+     */
     aria: node => props => {
       for (let [key, value] of entries(props))
         setAttribute(node, key === 'role' ? key : `aria-${key}`, value);
     },
-    // dataset attributes as object literals
+    /**
+     * Dataset attributes as object literal
+     * @param {Element} node
+     * @returns
+     */
     data: ({ dataset }) => props => {
       for (const [key, value] of entries(props)) {
         if (value == null) delete dataset[key];

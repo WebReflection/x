@@ -1,14 +1,12 @@
 import Node from './node.js';
 
-import { direct } from '../utils.js';
-
-const DirectMap = direct(Map);
+const fr = new FinalizationRegistry(([map, value]) => { map.delete(value); });
 
 export default class Keyed extends Node {
   constructor(node, paths, update, key) {
     super(node, paths, update);
     this.key = key;
-    this.map = new DirectMap;
+    this.map = new Map;
   }
   /**
    * @param {import("../types.js").Update} update
@@ -16,7 +14,7 @@ export default class Keyed extends Node {
    * @returns {{update: (values: unknown[]) => GenericNode}}
    */
   create(once) {
-    return {
+    const wrap = {
       /**
        * @param {unknown[]} values 
        * @returns
@@ -24,9 +22,15 @@ export default class Keyed extends Node {
       update: values => {
         const { key, map } = this;
         const value = values[key];
-        const info = map.get(value) || map.set(value, super.create(once));
+        let info = map.get(value);
+        if (!info) {
+          info = super.create(once);
+          map.set(value, info);
+          fr.register(wrap, [map, value]);
+        }
         return info.update(values);
       },
     };
+    return wrap;
   }
 }
