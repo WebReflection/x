@@ -1,10 +1,6 @@
 import {
-  ANY,
   ARRAY,
-  COMMENT_NODE,
   HOLE,
-  OBJECT,
-  STACK,
 } from '../constants.js';
 
 import { empty } from '../utils.js';
@@ -40,6 +36,14 @@ const array = (cache, holes) => {
 };
 
 const asCache = ({ k, v }) => abc(k, v, v === HOLE ? new Stack : []);
+function update({ a: i, b: type, c: value }) {
+  if (type === ARRAY)
+    array(value, this[i]);
+  else {
+    const { k: different, v: node } = diff(value, this[i]);
+    this[i] = different ? node.valueOf() : node;
+  }
+}
 
 export default class Stack {
   static diff = diff;

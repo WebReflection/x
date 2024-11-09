@@ -10,6 +10,11 @@ import Stack from './classes/stack.js';
 import { direct } from './utils.js';
 import parser from './parser.js';
 
+const DirectWeakMap = direct(WeakMap);
+
+const dwm = new DirectWeakMap;
+const { diff } = Stack;
+
 /**
  * @param {import("./types.js").Node} node
  * @param {unknown[]} values
@@ -24,12 +29,7 @@ const once = (node, values) => node.create(true).update(values);
  */
 const many = (node, values) => new Hole(node, values);
 
-const DirectWeakMap = direct(WeakMap);
-
-const dwm = new DirectWeakMap;
-const { diff } = Stack;
-
-let rendering = null;
+let resolve = once;
 
 /**
  * @param {ParentNode} where
@@ -37,15 +37,14 @@ let rendering = null;
  * @returns {ParentNode}
  */
 export const render = (where, what) => {
-  const prev = rendering;
-  rendering = dwm.get(where) || dwm.set(where, new Stack);
-  try {
-    const { k: different, v: node } = diff(rendering, what());
-    if (different) where.replaceChildren(node.valueOf());
-  }
-  finally {
-    rendering = prev;
-  }
+  const resolver = resolve;
+  resolve = many;
+  const { k: different, v: node } = diff(
+    dwm.get(where) || dwm.set(where, new Stack),
+    what()
+  );
+  if (different) where.replaceChildren(node.valueOf());
+  resolve = resolver;
   return where;
 };
 
@@ -63,7 +62,7 @@ export const tag = (SVG, attr, diff, text) => {
     [COMMENT_NODE]: (node, once, hint) => diff(node, hint, once, SVG),
     [ELEMENT_NODE]: text,
   };
-  return (t, ...v) => (rendering === null ? once : many)(
+  return (t, ...v) => resolve(
     dwm.get(t) || dwm.set(t, parse(t, v, attr, update)),
     v,
   )
