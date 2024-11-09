@@ -6,15 +6,11 @@ import Fragment from '../classes/fragment.js';
 
 import { empty } from '../utils.js';
 
-const any = (node, prev) => {
-  const text = document.createTextNode(prev);
-  node.replaceWith(text);
-  return curr => {
-    if (curr != prev) {
-      text.data = curr ?? '';
-      prev = curr;
-    }
-  };
+const any = (node, prev) => curr => {
+  if (prev !== curr) {
+    prev = curr;
+    node.data = curr ?? '';
+  }
 };
 
 const { diff } = Fragment;

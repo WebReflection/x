@@ -8,16 +8,19 @@ import {
 } from '../constants.js';
 
 import { empty } from '../utils.js';
+import { abc, kv } from '../literals.js';
 
 /**
  * @typedef {Object} ReplaceChildren
  * @prop {(node:Node) => void} replaceChildren
  */
 
-const diff = (stack, hole) => [
-  stack.as(hole),
-  stack.get(hole),
-];
+/**
+ * @param {Stack} stack
+ * @param {import("../types.js").Hole} hole
+ * @returns {{ k: boolean, v: import("../types.js").GenericNode] }}
+ */
+const diff = (stack, { k, v }) => kv(stack.as(k), stack.get(v));
 
 /**
  * @param {Stack[]} cache
@@ -28,76 +31,54 @@ const array = (cache, holes) => {
   if (length < cache.length)
     cache.splice(length);
   for (let i = 0; i < length; i++) {
-    holes[i] = diff(
-      cache[i] || (cache[i] = new Stack(HOLE)),
+    const { v: node } = diff(
+      cache[i] || (cache[i] = new Stack),
       holes[i]
-    )[1];
+    );
+    holes[i] = node;
   }
 };
+
+const asCache = ({ k, v }) => abc(k, v, v === HOLE ? new Stack : []);
 
 export default class Stack {
   static diff = diff;
 
-  /**
-   * @param {STACK | ANY | ARRAY | HOLE | OBJECT} type
-   */
-  constructor(type) {
-    this.type = type;
-    /** @type {import("../types.js").Node | import("../types.js").Keyed | null} */
-    this.node = null;
-    /** @type {{ update: (values: unknown[]) => GenericNode }?} */
-    this.value = null;
-    /** @type {Stack[]} */
-    this.cache = empty;
-  }
+  /** @type {import("../types.js").Node | import("../types.js").Keyed | null} */
+  node = null;
+  /** @type {{ update: (values: unknown[]) => GenericNode }?} */
+  value = null;
+  /** @type {[number, number, Stack | Stack[]][]} */
+  cache = empty;
 
   /**
    * @param {import("../types.js").Hole} hole
    * @returns {boolean}
    */
-  as({ node, values: { length } }) {
-    const different = this.node !== node;
-    if (different) {
+  as(node) {
+    if (this.node !== node) {
+      const cache = node.holes.map(asCache);
       this.node = node;
       this.value = node.create(false);
-      this.cache = length ? [] : empty;
+      this.cache = cache.length ? cache : empty;
+      return true;
     }
-    return different;
+    return false;
   }
 
   /**
    * @param {import("../types.js").Hole} hole
    * @returns {import("../types.js").GenericNode}
    */
-  get({ values }) {
-    const { node: { paths }, value, cache } = this;
-    for (let j = 0, i = 0; i < paths.length; i++) {
-      const { type, extra } = paths[i];
-      if (type === COMMENT_NODE) {
-        if (extra === HOLE) {
-          const [different, node] = diff(
-            cache[j] || (cache[j] = new Stack(extra)),
-            values[i]
-          );
-          values[i] = different ? node.valueOf() : node;
-          j++;
-        }
-        else if (extra === ARRAY) {
-          array(
-            cache[j] || (cache[j] = []),
-            values[i]
-          );
-          j++;
-        }
-        // TODO: not sure about this one ...
-        // else if (extra === OBJECT) {
-        //   const curr = values[i];
-        //   if (cache[j] != curr) {
-        //     cache[j] = curr;
-        //     values[i] = curr.valueOf();
-        //   }
-        //   j++;
-        // }
+  get(values) {
+    const { value, cache } = this;
+    for (let j = 0, { length } = cache; j < length; j++) {
+      const { a: i, b: type, c: value } = cache[j];
+      if (type === ARRAY)
+        array(value, values[i]);
+      else {
+        const { k: different, v: node } = diff(value, values[i]);
+        values[i] = different ? node.valueOf() : node;
       }
     }
     return value.update(values);

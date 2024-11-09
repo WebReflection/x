@@ -2,7 +2,6 @@ import {
   ATTRIBUTE_NODE,
   COMMENT_NODE,
   ELEMENT_NODE,
-  STACK
 } from './constants.js';
 
 import Hole from './classes/hole.js';
@@ -13,7 +12,6 @@ import parser from './parser.js';
 
 /**
  * @param {import("./types.js").Node} node
- * @param {import("./types.js").Update} update
  * @param {unknown[]} values
  * @returns {import("./types.js").ParsedNode}
  */
@@ -40,9 +38,9 @@ let rendering = null;
  */
 export const render = (where, what) => {
   const prev = rendering;
-  rendering = dwm.get(where) || dwm.set(where, new Stack(STACK));
+  rendering = dwm.get(where) || dwm.set(where, new Stack);
   try {
-    const [different, node] = diff(rendering, what());
+    const { k: different, v: node } = diff(rendering, what());
     if (different) where.replaceChildren(node.valueOf());
   }
   finally {

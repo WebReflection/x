@@ -15,16 +15,15 @@ export default document => {
   const ARRAY = 2;
   const HOLE = 3;
   const OBJECT = 4;
-  const STACK = 0;
   
   class Hole {
     /**
-     * @param {import("./types.js").Node | import("./types.js").Keyed} node
+     * @param {import("../types.js").Node} node
      * @param {unknown[]} values
      */
     constructor(node, values) {
-      this.node = node;
-      this.values = values;
+      this.k = node;
+      this.v = values;
     }
   }
   
@@ -44,15 +43,22 @@ export default document => {
     }
   };
   
+  const abc = (a, b, c) => ({ a, b, c });
+  const kv = (k, v) => ({ k, v });
+  
+  const info = (update) => ({ update });
+  
   /**
    * @typedef {Object} ReplaceChildren
    * @prop {(node:Node) => void} replaceChildren
    */
   
-  const diff$3 = (stack, hole) => [
-    stack.as(hole),
-    stack.get(hole),
-  ];
+  /**
+   * @param {Stack} stack
+   * @param {import("../types.js").Hole} hole
+   * @returns {{ k: boolean, v: import("../types.js").GenericNode] }}
+   */
+  const diff$3 = (stack, { k, v }) => kv(stack.as(k), stack.get(v));
   
   /**
    * @param {Stack[]} cache
@@ -63,76 +69,54 @@ export default document => {
     if (length < cache.length)
       cache.splice(length);
     for (let i = 0; i < length; i++) {
-      holes[i] = diff$3(
-        cache[i] || (cache[i] = new Stack(HOLE)),
+      const { v: node } = diff$3(
+        cache[i] || (cache[i] = new Stack),
         holes[i]
-      )[1];
+      );
+      holes[i] = node;
     }
   };
+  
+  const asCache = ({ k, v }) => abc(k, v, v === HOLE ? new Stack : []);
   
   class Stack {
     static diff = diff$3;
   
-    /**
-     * @param {STACK | ANY | ARRAY | HOLE | OBJECT} type
-     */
-    constructor(type) {
-      this.type = type;
-      /** @type {import("../types.js").Node | import("../types.js").Keyed | null} */
-      this.node = null;
-      /** @type {{ update: (values: unknown[]) => GenericNode }?} */
-      this.value = null;
-      /** @type {Stack[]} */
-      this.cache = empty;
-    }
+    /** @type {import("../types.js").Node | import("../types.js").Keyed | null} */
+    node = null;
+    /** @type {{ update: (values: unknown[]) => GenericNode }?} */
+    value = null;
+    /** @type {[number, number, Stack | Stack[]][]} */
+    cache = empty;
   
     /**
      * @param {import("../types.js").Hole} hole
      * @returns {boolean}
      */
-    as({ node, values: { length } }) {
-      const different = this.node !== node;
-      if (different) {
+    as(node) {
+      if (this.node !== node) {
+        const cache = node.holes.map(asCache);
         this.node = node;
         this.value = node.create(false);
-        this.cache = length ? [] : empty;
+        this.cache = cache.length ? cache : empty;
+        return true;
       }
-      return different;
+      return false;
     }
   
     /**
      * @param {import("../types.js").Hole} hole
      * @returns {import("../types.js").GenericNode}
      */
-    get({ values }) {
-      const { node: { paths }, value, cache } = this;
-      for (let j = 0, i = 0; i < paths.length; i++) {
-        const { type, extra } = paths[i];
-        if (type === COMMENT_NODE) {
-          if (extra === HOLE) {
-            const [different, node] = diff$3(
-              cache[j] || (cache[j] = new Stack(extra)),
-              values[i]
-            );
-            values[i] = different ? node.valueOf() : node;
-            j++;
-          }
-          else if (extra === ARRAY) {
-            array$1(
-              cache[j] || (cache[j] = []),
-              values[i]
-            );
-            j++;
-          }
-          // TODO: not sure about this one ...
-          // else if (extra === OBJECT) {
-          //   const curr = values[i];
-          //   if (cache[j] != curr) {
-          //     cache[j] = curr;
-          //     values[i] = curr.valueOf();
-          //   }
-          //   j++;
-          // }
+    get(values) {
+      const { value, cache } = this;
+      for (let j = 0, { length } = cache; j < length; j++) {
+        const { a: i, b: type, c: value } = cache[j];
+        if (type === ARRAY)
+          array$1(value, values[i]);
+        else {
+          const { k: different, v: node } = diff$3(value, values[i]);
+          values[i] = different ? node.valueOf() : node;
         }
       }
       return value.update(values);
@@ -275,27 +259,16 @@ export default document => {
     }
   }
   
-  // class NodeInfo {
-  //   constructor(node, updates) {
-  //     this.node = node;
-  //     this.updates = updates;
-  //   }
-  //   update(values) {
-  //     const { node, updates } = this;
-  //     for (let i = 0; i < updates.length; i++) updates[i](values[i]);
-  //     return node;
-  //   }
-  // }
-  
   class Node {
     /**
      * @param {import("../types.js").GenericNode} node
      * @param {import("../types.js").Path[]} paths
      */
-    constructor(node, paths, update) {
+    constructor(node, paths, holes, update) {
       this.type = node.nodeType;
       this.node = node;
       this.paths = paths;
+      this.holes = holes;
       this.update = update;
     }
   
@@ -310,7 +283,7 @@ export default document => {
       const updates = length ? [] : empty;
       let dom = document.importNode(node, true);
       for (let prevPath = empty, node = dom, i = 0; i < length; i++) {
-        const { type, path, extra } = paths[i];
+        const { a: type, b: path, c: extra } = paths[i];
         // speed up multiple attributes per same node
         if (prevPath !== path) {
           prevPath = path;
@@ -320,39 +293,20 @@ export default document => {
         updates[i] = update[type](node, once, extra);
       }
       if (type === DOCUMENT_FRAGMENT_NODE) dom = new Fragment(dom);
-      return {
-        update: values => {
+      return info(
+        values => {
           for (let i = 0; i < length; i++) updates[i](values[i]);
           return dom;
-        },
-      };
+        }
+      );
     }
   }
   
   const fr = new FinalizationRegistry(([map, value]) => { map.delete(value); });
   
-  // class KeyedInfo {
-  //   constructor({ key, map }, create) {
-  //     this.key = key;
-  //     this.map = map;
-  //     this.create = create;
-  //   }
-  //   update(values) {
-  //     const { key, map, create } = this;
-  //     const value = values[key];
-  //     let info = map.get(value);
-  //     if (!info) {
-  //       info = create();
-  //       map.set(value, info);
-  //       fr.register(this, [map, value]);
-  //     }
-  //     return info.update(values);
-  //   }
-  // }
-  
   class Keyed extends Node {
-    constructor(node, paths, update, key) {
-      super(node, paths, update);
+    constructor(node, paths, holes, update, key) {
+      super(node, paths, holes, update);
       this.key = key;
       this.map = new Map;
     }
@@ -363,8 +317,8 @@ export default document => {
      */
     create(once) {
       const { key, map } = this;
-      const wrap = {
-        update: values => {
+      const wrap = info(
+        values => {
           const value = values[key];
           let info = map.get(value);
           if (!info) {
@@ -373,8 +327,8 @@ export default document => {
             fr.register(wrap, [map, value]);
           }
           return info.update(values);
-        },
-      };
+        }
+      );
       return wrap;
     }
   }
@@ -426,14 +380,6 @@ export default document => {
     return i ? path : empty;
   };
   
-  /**
-   * @param {1 | 2 | 8} type the node type at that path
-   * @param {number[]} path a list of indexes from the top parent node to retrieve either the attribute element owner, or the node
-   * @param {{k:string, v:string} | ANY | ARRAY | HOLE | OBJECT | null} extra
-   * @returns 
-   */
-  const info = (type, path, extra) => ({ type, path, extra });
-  
   const keyValue = ['key', ''];
   const prefix = 'isµ';
   
@@ -447,66 +393,75 @@ export default document => {
       const text = parser$1(template, prefix, SVG);
       const node = content(text);
       const length = template.length - 1;
-      let paths = empty, key = -1, i = 0, tw, target;
-      if (length) {
-        paths = [];
-        while (i < length) {
-          target = tw?.nextNode() || node;
-          switch (target.nodeType) {
-            case COMMENT_NODE: {
-              // holes
-              if (target.data === (prefix + i)) {
-                const value = values[i];
-                paths[i++] = info(
-                  COMMENT_NODE,
-                  map(target),
-                  isObject(value) ?
-                    (value instanceof Hole ?
-                      HOLE : (isArray(value) ? ARRAY : OBJECT)) :
-                    ANY,
-                );
-              }
-              break;
+      const paths = [], holes = [], comments = [];
+      const tw = document.createTreeWalker(node, 1 | 128);
+      let key = -1, i = 0;
+      while (i < length) {
+        const { currentNode } = tw;
+        switch (currentNode.nodeType) {
+          case COMMENT_NODE: {
+            // holes
+            if (currentNode.data === (prefix + i)) {
+              const value = values[i];
+              const extra = isObject(value) ?
+                (value instanceof Hole ?
+                  HOLE : (isArray(value) ? ARRAY : OBJECT)) :
+                ANY
+              ;
+              if (extra === ANY) comments.push(currentNode);
+              // TODO: objects as holes is currently not supported
+              else if (extra !== OBJECT) holes.push(kv(i, extra));
+              i = paths.push(abc(COMMENT_NODE, map(currentNode), extra));
             }
-            case ELEMENT_NODE: {
-              let path, search;
-              // attributes
-              while (target.hasAttribute((search = prefix + i))) {
-                const name = target.getAttribute(search);
-                let extra = keyValue;
-                if (name === 'key') key = i;
-                else {
-                  let c = name[0];
-                  let k = c in attr ? c : (name in attr ? name : attribute);
-                  extra = [k, c === k ? name.slice(1) : name];
-                }
-                path ??= map(target);
-                paths[i++] = info(ATTRIBUTE_NODE, path, extra);
-                target.removeAttribute(search);
-              }
-              // text only elements:
-              // plaintext, script, style, textarea, title, xmp
-              if (
-                !SVG &&
-                TEXT_ELEMENTS.test(target.localName) &&
-                target.textContent.trim() === `<!--${search}-->`
-              ) {
-                paths[i++] = info(ELEMENT_NODE, path || map(target), null);
-              }
-              break;
-            }
+            break;
           }
-          if (i < length && !tw) tw = document.createTreeWalker(node, 1 | 128);
+          case ELEMENT_NODE: {
+            let path, search;
+            // attributes
+            while (currentNode.hasAttribute((search = prefix + i))) {
+              const name = currentNode.getAttribute(search);
+              let extra = keyValue;
+              if (name === 'key') key = i;
+              else {
+                let c = name[0];
+                let k = c in attr ? c : (name in attr ? name : attribute);
+                extra = [k, c === k ? name.slice(1) : name];
+              }
+              path ??= map(currentNode);
+              currentNode.removeAttribute(search);
+              i = paths.push(abc(ATTRIBUTE_NODE, path, extra));
+            }
+            // text only elements:
+            // plaintext, script, style, textarea, title, xmp
+            if (
+              !SVG &&
+              TEXT_ELEMENTS.test(currentNode.localName) &&
+              currentNode.textContent.trim() === `<!--${search}-->`
+            ) {
+              i = paths.push(abc(ELEMENT_NODE, path || map(currentNode), null));
+            }
+            break;
+          }
         }
+        tw.nextNode();
       }
+  
+      for (let i = 0, { length } = comments; i < length; i++)
+        comments[i].replaceWith(document.createTextNode(''));
+  
       const Class = key < 0 ? Node : Keyed;
-      return new Class(node, paths, update, key);
+      return new Class(
+        node,
+        i ? paths : empty,
+        holes.length ? holes : empty,
+        update,
+        key
+      );
     };
   };
   
   /**
    * @param {import("./types.js").Node} node
-   * @param {import("./types.js").Update} update
    * @param {unknown[]} values
    * @returns {import("./types.js").ParsedNode}
    */
@@ -533,9 +488,9 @@ export default document => {
    */
   const render = (where, what) => {
     const prev = rendering;
-    rendering = dwm.get(where) || dwm.set(where, new Stack(STACK));
+    rendering = dwm.get(where) || dwm.set(where, new Stack);
     try {
-      const [different, node] = diff$2(rendering, what());
+      const { k: different, v: node } = diff$2(rendering, what());
       if (different) where.replaceChildren(node.valueOf());
     }
     finally {
@@ -864,15 +819,11 @@ export default document => {
     return b;
   };
   
-  const any = (node, prev) => {
-    const text = document.createTextNode(prev);
-    node.replaceWith(text);
-    return curr => {
-      if (curr != prev) {
-        text.data = curr ?? '';
-        prev = curr;
-      }
-    };
+  const any = (node, prev) => curr => {
+    if (prev !== curr) {
+      prev = curr;
+      node.data = curr ?? '';
+    }
   };
   
   const { diff } = Fragment;
