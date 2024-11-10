@@ -43,6 +43,8 @@ export default document => {
     }
   };
   
+  const { keys } = Object;
+  
   const abc = (a, b, c) => ({ a, b, c });
   const kv = (k, v) => ({ k, v });
   
@@ -77,7 +79,7 @@ export default document => {
     }
   };
   
-  const asCache = ({ k, v }) => abc(k, v, v === HOLE ? new Stack : []);
+  const entries$1 = ({ k, v }) => abc(k, v, v === HOLE ? new Stack : []);
   
   class Stack {
     static diff = diff$3;
@@ -95,10 +97,10 @@ export default document => {
      */
     as(node) {
       if (this.node !== node) {
-        const cache = node.holes.map(asCache);
+        const { holes } = node;
         this.node = node;
         this.value = node.create(false);
-        this.cache = cache.length ? cache : empty;
+        this.cache = holes.length ? holes.map(entries$1) : empty;
         return true;
       }
       return false;
@@ -109,17 +111,15 @@ export default document => {
      * @returns {import("../types.js").GenericNode}
      */
     get(values) {
-      const { value, cache } = this;
-      for (let j = 0, { length } = cache; j < length; j++) {
-        const { a: i, b: type, c: value } = cache[j];
+      for (const { a: i, b: type, c: ref } of this.cache) {
         if (type === ARRAY)
-          array$1(value, values[i]);
+          array$1(ref, values[i]);
         else {
-          const { k: different, v: node } = diff$3(value, values[i]);
+          const { k: different, v: node } = diff$3(ref, values[i]);
           values[i] = different ? node.valueOf() : node;
         }
       }
-      return value.update(values);
+      return this.value.update(values);
     }
   }
   
@@ -334,9 +334,9 @@ export default document => {
   }
   
   const getContent = fragment => {
-    const { firstChild: $ } = fragment;
+    const { firstChild: $, lastChild } = fragment;
     // empty html`` fragments or html`${[]}` cases
-    return $ && $ === fragment.lastChild && $.nodeType !== COMMENT_NODE ?
+    return $ && $ === lastChild && $.nodeType !== COMMENT_NODE ?
       fragment.removeChild($) : fragment;
   };
   
@@ -394,6 +394,8 @@ export default document => {
       const node = content(text);
       const length = template.length - 1;
       const paths = [], holes = [], comments = [];
+      // TODO: the only thing I am not convinced is that
+      // a TreeWalker is any better or faster for the task
       const tw = document.createTreeWalker(node, 1 | 128);
       let key = -1, i = 0;
       while (i < length) {
@@ -423,8 +425,8 @@ export default document => {
               let extra = keyValue;
               if (name === 'key') key = i;
               else {
-                let c = name[0];
-                let k = c in attr ? c : (name in attr ? name : attribute);
+                const c = name[0];
+                const k = attr.has(c) ? c : (attr.has(name) ? name : attribute);
                 extra = [k, c === k ? name.slice(1) : name];
               }
               path ??= map(currentNode);
@@ -446,8 +448,8 @@ export default document => {
         tw.nextNode();
       }
   
-      for (let i = 0, { length } = comments; i < length; i++)
-        comments[i].replaceWith(document.createTextNode(''));
+      for (const comment of comments)
+        comment.replaceWith(document.createTextNode(''));
   
       const Class = key < 0 ? Node : Keyed;
       return new Class(
@@ -459,6 +461,11 @@ export default document => {
       );
     };
   };
+  
+  const DirectWeakMap = direct(WeakMap);
+  
+  const dwm = new DirectWeakMap;
+  const { diff: diff$2 } = Stack;
   
   /**
    * @param {import("./types.js").Node} node
@@ -474,12 +481,7 @@ export default document => {
    */
   const many = (node, values) => new Hole(node, values);
   
-  const DirectWeakMap = direct(WeakMap);
-  
-  const dwm = new DirectWeakMap;
-  const { diff: diff$2 } = Stack;
-  
-  let rendering = null;
+  let resolve = once;
   
   /**
    * @param {ParentNode} where
@@ -487,15 +489,14 @@ export default document => {
    * @returns {ParentNode}
    */
   const render = (where, what) => {
-    const prev = rendering;
-    rendering = dwm.get(where) || dwm.set(where, new Stack);
-    try {
-      const { k: different, v: node } = diff$2(rendering, what());
-      if (different) where.replaceChildren(node.valueOf());
-    }
-    finally {
-      rendering = prev;
-    }
+    const resolver = resolve;
+    resolve = many;
+    const { k: different, v: node } = diff$2(
+      dwm.get(where) || dwm.set(where, new Stack),
+      what()
+    );
+    if (different) where.replaceChildren(node.valueOf());
+    resolve = resolver;
     return where;
   };
   
@@ -506,6 +507,7 @@ export default document => {
    * @returns {(template:TemplateStringsArray | string[], ...interpolations:unknown) => import("./types.js").ParsedNode | import("./types.js").Hole}
    */
   const tag = (SVG, attr, diff, text) => {
+    const attributes = new Set(keys(attr));
     const dwm = new DirectWeakMap;
     const parse = parser(SVG);
     const update = {
@@ -513,8 +515,8 @@ export default document => {
       [COMMENT_NODE]: (node, once, hint) => diff(node, hint, once, SVG),
       [ELEMENT_NODE]: text,
     };
-    return (t, ...v) => (rendering === null ? once : many)(
-      dwm.get(t) || dwm.set(t, parse(t, v, attr, update)),
+    return (t, ...v) => resolve(
+      dwm.get(t) || dwm.set(t, parse(t, v, attributes, update)),
       v,
     )
   };

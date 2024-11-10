@@ -35,15 +35,7 @@ const array = (cache, holes) => {
   }
 };
 
-const asCache = ({ k, v }) => abc(k, v, v === HOLE ? new Stack : []);
-function update({ a: i, b: type, c: value }) {
-  if (type === ARRAY)
-    array(value, this[i]);
-  else {
-    const { k: different, v: node } = diff(value, this[i]);
-    this[i] = different ? node.valueOf() : node;
-  }
-}
+const entries = ({ k, v }) => abc(k, v, v === HOLE ? new Stack : []);
 
 export default class Stack {
   static diff = diff;
@@ -61,10 +53,10 @@ export default class Stack {
    */
   as(node) {
     if (this.node !== node) {
-      const cache = node.holes.map(asCache);
+      const { holes } = node;
       this.node = node;
       this.value = node.create(false);
-      this.cache = cache.length ? cache : empty;
+      this.cache = holes.length ? holes.map(entries) : empty;
       return true;
     }
     return false;
@@ -75,16 +67,14 @@ export default class Stack {
    * @returns {import("../types.js").GenericNode}
    */
   get(values) {
-    const { value, cache } = this;
-    for (let j = 0, { length } = cache; j < length; j++) {
-      const { a: i, b: type, c: value } = cache[j];
+    for (const { a: i, b: type, c: ref } of this.cache) {
       if (type === ARRAY)
-        array(value, values[i]);
+        array(ref, values[i]);
       else {
-        const { k: different, v: node } = diff(value, values[i]);
+        const { k: different, v: node } = diff(ref, values[i]);
         values[i] = different ? node.valueOf() : node;
       }
     }
-    return value.update(values);
+    return this.value.update(values);
   }
 }

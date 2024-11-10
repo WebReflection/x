@@ -7,7 +7,7 @@ import {
 import Hole from './classes/hole.js';
 import Stack from './classes/stack.js';
 
-import { direct } from './utils.js';
+import { direct, keys } from './utils.js';
 import parser from './parser.js';
 
 const DirectWeakMap = direct(WeakMap);
@@ -55,6 +55,7 @@ export const render = (where, what) => {
  * @returns {(template:TemplateStringsArray | string[], ...interpolations:unknown) => import("./types.js").ParsedNode | import("./types.js").Hole}
  */
 export const tag = (SVG, attr, diff, text) => {
+  const attributes = new Set(keys(attr));
   const dwm = new DirectWeakMap;
   const parse = parser(SVG);
   const update = {
@@ -63,7 +64,7 @@ export const tag = (SVG, attr, diff, text) => {
     [ELEMENT_NODE]: text,
   };
   return (t, ...v) => resolve(
-    dwm.get(t) || dwm.set(t, parse(t, v, attr, update)),
+    dwm.get(t) || dwm.set(t, parse(t, v, attributes, update)),
     v,
   )
 };

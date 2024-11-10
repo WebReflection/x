@@ -49,6 +49,8 @@ export default SVG => {
     const node = content(text);
     const length = template.length - 1;
     const paths = [], holes = [], comments = [];
+    // TODO: the only thing I am not convinced is that
+    // a TreeWalker is any better or faster for the task
     const tw = document.createTreeWalker(node, 1 | 128);
     let key = -1, i = 0;
     while (i < length) {
@@ -78,8 +80,8 @@ export default SVG => {
             let extra = keyValue;
             if (name === 'key') key = i;
             else {
-              let c = name[0];
-              let k = c in attr ? c : (name in attr ? name : attribute);
+              const c = name[0];
+              const k = attr.has(c) ? c : (attr.has(name) ? name : attribute);
               extra = [k, c === k ? name.slice(1) : name];
             }
             path ??= map(currentNode);
@@ -101,8 +103,8 @@ export default SVG => {
       tw.nextNode();
     }
 
-    for (let i = 0, { length } = comments; i < length; i++)
-      comments[i].replaceWith(document.createTextNode(''));
+    for (const comment of comments)
+      comment.replaceWith(document.createTextNode(''));
 
     const Class = key < 0 ? Node : Keyed;
     return new Class(

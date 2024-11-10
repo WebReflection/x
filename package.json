@@ -8,10 +8,12 @@
   "exports": {
     ".": "./x.js",
     "./attributes": "./src/handle/attr.js",
+    "./differ": "./src/handle/diff.js",
     "./fragment": "./src/classes/fragment.js",
     "./html": "./src/html.js",
     "./pony": "./src/pony.js",
     "./tag": "./src/tag.js",
+    "./text": "./src/handle/text.js",
     "./utils": "./src/utils.js"
   },
   "files": [

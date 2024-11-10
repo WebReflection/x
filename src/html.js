@@ -6,5 +6,3 @@ import diff from './handle/diff.js';
 import text from './handle/text.js';
 export const html = tag(false, attr, diff, text);
 export const svg = tag(true, attr, diff, text);
-
-// export const component = callback => (...args) => () => callback(...args);

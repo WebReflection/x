@@ -12,4 +12,6 @@ const direct = Map => class extends Map {
   }
 };
 
-export { attribute, direct, empty, isArray, isObject };
+const { keys } = Object;
+
+export { attribute, direct, empty, isArray, isObject, keys };

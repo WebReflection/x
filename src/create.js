@@ -1,9 +1,9 @@
 import { COMMENT_NODE } from './constants.js';
 
 const getContent = fragment => {
-  const { firstChild: $ } = fragment;
+  const { firstChild: $, lastChild } = fragment;
   // empty html`` fragments or html`${[]}` cases
-  return $ && $ === fragment.lastChild && $.nodeType !== COMMENT_NODE ?
+  return $ && $ === lastChild && $.nodeType !== COMMENT_NODE ?
     fragment.removeChild($) : fragment;
 };
 
