@@ -1,5 +1,9 @@
 import { COMMENT_NODE } from './constants.js';
 
+/**
+ * @param {DocumentFragment} fragment
+ * @returns {DocumentFragment | HTMLElement | SVGElement | Node}
+ */
 const getContent = fragment => {
   const { firstChild: $, lastChild } = fragment;
   // empty html`` fragments or html`${[]}` cases
@@ -18,6 +22,7 @@ export const html = text => {
   return node;
 };
 
+/** @type {Range} */
 let range;
 
 /** @type {(text:string) => DocumentFragment | SVGElement | Node} */

@@ -1,0 +1,26 @@
+import { ATTRIBUTE_NODE, COMMENT_NODE, ELEMENT_NODE } from '../constants.js';
+
+/** @typedef {import("../constants.js").ATTRIBUTE_NODE} ATTRIBUTE_NODE */
+/** @typedef {import("../constants.js").COMMENT_NODE} COMMENT_NODE */
+/** @typedef {import("../constants.js").ELEMENT_NODE} ELEMENT_NODE */
+
+/** @typedef {AttributePath | CommentPath | TextPath} AnyPath */
+/** @typedef {import("./key-value.js").AttributeDetails} AttributeDetails */
+/** @typedef {Path<ATTRIBUTE_NODE, number[], AttributeDetails>} AttributePath */
+/** @typedef {import("./key-value.js").CommentDetails} CommentDetails */
+/** @typedef {Path<COMMENT_NODE, number[], CommentDetails>} CommentPath */
+/** @typedef {Path<ELEMENT_NODE, number[], null>} TextPath */
+
+/** @template T,P,E */
+export default class Path {
+  /**
+   * @param {T} type
+   * @param {P} path
+   * @param {E} extra
+   */
+  constructor(type, path, extra) {
+    this.type = type;
+    this.path = path;
+    this.extra = extra;
+  }
+}

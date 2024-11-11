@@ -5,16 +5,16 @@ const { entries } = Object;
 const key = () => key;
 
 /**
- * @param {unknown | unknown[]} value
- * @returns {unknown[]}
+ * @param {any | any[]} value
+ * @returns {any[]}
  */
 const args = value => isArray(value) ? value : [value];
 
 /**
  * @param {Element} node
  * @param {string} type
- * @param {unknown[]} prev
- * @returns {(value:unknown | unknown[]) => void}
+ * @param {any[]} prev
+ * @returns {(value:any | any[]) => void}
  */
 const handleListener = (node, type, prev) => value => {
   const curr = args(value);
@@ -29,7 +29,7 @@ const handleListener = (node, type, prev) => value => {
  * Set or remove an attribute
  * @param {Element} node
  * @param {string} name
- * @param {unknown} value
+ * @param {any} value
  */
 const setAttribute = (node, name, value) => {
   if (value == null) node.removeAttribute(name);
@@ -40,7 +40,7 @@ const setAttribute = (node, name, value) => {
  * Directly set an element property as value
  * @param {Element} node
  * @param {string} prop
- * @param {unknown} value
+ * @param {any} value
  */
 const setProperty = (node, prop, value) => {
   node[prop] = value;
@@ -51,8 +51,8 @@ const setProperty = (node, prop, value) => {
  * @param {T} callback
  * @param {Element} node
  * @param {string} name
- * @param {unknown} prev
- * @returns {(value:unknown) => void}
+ * @param {any} prev
+ * @returns {(value:any) => void}
  */
 const storeValueFor = (callback, node, name, prev) => curr => {
   if (prev != curr) callback(node, name, (prev = curr));
@@ -71,7 +71,6 @@ const toggleAttribute = (node, name, value) => {
 const noListener = [null];
 
 export default {
-  __proto__: null,
   // DEFAULT ATTRIBUTE HANDLER
   /**
    * @param {Element} node

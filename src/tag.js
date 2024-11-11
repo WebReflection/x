@@ -4,11 +4,15 @@ import {
   ELEMENT_NODE,
 } from './constants.js';
 
-import Hole from './classes/hole.js';
+import KeyValue from './classes/key-value.js';
 import Stack from './classes/stack.js';
 
 import { direct, keys } from './utils.js';
 import parser from './parser.js';
+
+/** @typedef {import("./classes/fragment.js").default} Fragment */
+/** @typedef {import("./classes/key-value.js").HoleDetails} HoleDetails */
+/** @typedef {import("./classes/key-value.js").TagResult} TagResult */
 
 const DirectWeakMap = direct(WeakMap);
 
@@ -16,25 +20,25 @@ const dwm = new DirectWeakMap;
 const { diff } = Stack;
 
 /**
- * @param {import("./types.js").Node} kv
- * @param {unknown[]} values
- * @returns {import("./types.js").ParsedNode}
+ * @param {KeyValue<HoleDetails[], (once: boolean) => (values: any[]) => Node>} details
+ * @param {any[]} values
+ * @returns
  */
 const once = ({ v: create }, values) => create(true)(values);
 
 /**
- * @param {import("./types.js").Node} node
- * @param {unknown[]} values
- * @returns {import("./types.js").Hole}
+ * @param {KeyValue<HoleDetails[], (once: boolean) => (values: any[]) => Node>} details
+ * @param {any[]} values
+ * @returns
  */
-const many = (node, values) => new Hole(node, values);
+const many = (details, values) => new KeyValue(details, values);
 
 let resolve = once;
 
 /**
  * @param {ParentNode} where
- * @param {() => import("./types.js").Hole} what
- * @returns {ParentNode}
+ * @param {() => TagResult} what
+ * @returns
  */
 export const render = (where, what) => {
   const resolver = resolve;
@@ -50,19 +54,37 @@ export const render = (where, what) => {
 
 /**
  * @param {boolean} SVG
- * @param {unknown} attr
- * @param {unknown} diff
- * @returns {(template:TemplateStringsArray | string[], ...interpolations:unknown) => import("./types.js").ParsedNode | import("./types.js").Hole}
+ * @param {import("./handle/attr.js").default} attr
+ * @param {import("./handle/diff.js").default} diff
+ * @param {import("./handle/text.js").default} text
+ * @returns
  */
 export const tag = (SVG, attr, diff, text) => {
   const attributes = new Set(keys(attr));
   const dwm = new DirectWeakMap;
   const parse = parser(SVG);
   const update = {
-    [ATTRIBUTE_NODE]: (node, once, [k, v]) => attr[k](node, v, once, SVG),
+    /**
+     * @param {Element} node
+     * @param {boolean} once
+     * @param {import("./classes/key-value.js").AttributeDetails} kv
+     * @returns
+     */
+    [ATTRIBUTE_NODE]: (node, once, { k, v }) => attr[k](node, v, once, SVG),
+    /**
+     * @param {Comment} node
+     * @param {boolean} once
+     * @param {import("./handle/diff.js").HINT} hint
+     * @returns
+     */
     [COMMENT_NODE]: (node, once, hint) => diff(node, hint, once, SVG),
     [ELEMENT_NODE]: text,
   };
+  /**
+   * @param {TemplateStringsArray | string[]} t
+   * @param {...any} v
+   * @returns {Fragment | Node | TagResult}
+   */
   return (t, ...v) => resolve(
     dwm.get(t) || dwm.set(t, parse(t, v, attributes, update)),
     v,

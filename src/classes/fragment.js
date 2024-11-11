@@ -7,6 +7,11 @@ let active = false;
 /** @extends {DocumentFragment} for real! */
 export default class Fragment extends native(DocumentFragment) {
   // u/domdiff helper
+  /**
+   * @param {Node | Fragment} node
+   * @param {1 | 0 | -0 | -1} op
+   * @returns {Node | Fragment}
+   */
   static diff = (node, op) => active && node instanceof Fragment ?
     ((1 / op) < 0 ?
       (op ? /* remove */ node.#remove(true) : /* after */ node.#lastChild) :

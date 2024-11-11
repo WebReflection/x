@@ -1,26 +1,31 @@
-import {
-  ARRAY,
-  HOLE,
-} from '../constants.js';
+import { ARRAY, HOLE } from '../constants.js';
+
+import Cache from './cache.js';
+import KeyValue from './key-value.js';
 
 import { empty } from '../utils.js';
-import { abc, kv } from '../literals.js';
 
 /**
  * @typedef {Object} ReplaceChildren
  * @prop {(node:Node) => void} replaceChildren
  */
 
+/** @typedef {import("./cache.js").CachedEntries} CachedEntries */
+/** @typedef {import("./key-value.js").Keyed} Keyed */
+/** @typedef {import("./key-value.js").NonKeyed} NonKeyed */
+/** @typedef {import("./key-value.js").TagResult} TagResult */
+
 /**
+ * 
  * @param {Stack} stack
- * @param {import("../types.js").Hole} hole
- * @returns {{ k: boolean, v: import("../types.js").GenericNode] }}
+ * @param {TagResult} tagReturn
+ * @returns
  */
-const diff = (stack, { k, v }) => kv(stack.as(k), stack.get(v));
+const diff = (stack, { k, v }) => new KeyValue(stack.as(k), stack.get(v));
 
 /**
  * @param {Stack[]} cache
- * @param {import("../types.js").Hole[]} values
+ * @param {TagResult[]} values
  */
 const array = (cache, values) => {
   const { length } = values;
@@ -35,42 +40,45 @@ const array = (cache, values) => {
   }
 };
 
-const entries = ({ k, v }) => abc(k, v, v === HOLE ? new Stack : []);
+/**
+ * @param {import("./key-value.js").HoleDetails} details
+ * @returns {CachedEntries}
+ */
+const entries = ({ k, v }) => new Cache(k, v, v === HOLE ? new Stack : []);
 
 export default class Stack {
   static diff = diff;
 
-  /** @type {import("../types.js").Node | import("../types.js").Keyed | null} */
-  holes = null;
-  /** @type {{ update: (values: unknown[]) => GenericNode }?} */
+  create = null;
+  /** @type {null | (values: any[]) => Node} */
   update = null;
-  /** @type {[number, number, Stack | Stack[]][]} */
+  /** @type {never[] | CachedEntries[]} */
   cache = empty;
 
   /**
-   * @param {import("../types.js").Hole} hole
-   * @returns {boolean}
+   * @param {Keyed | NonKeyed} updater
+   * @returns
    */
   as({ k: holes, v: create }) {
-    if (this.holes !== holes) {
-      this.holes = holes;
+    const different = this.create !== create;
+    if (different) {
+      this.create = create;
       this.update = create(false);
-      this.cache = holes.length ? holes.map(entries) : empty;
-      return true;
+      this.cache = holes === empty ? empty : holes.map(entries);
     }
-    return false;
+    return different;
   }
 
   /**
-   * @param {import("../types.js").Hole} hole
-   * @returns {import("../types.js").GenericNode}
+   * @param {any[]} values
+   * @returns {Node}
    */
   get(values) {
-    for (const { a: i, b: type, c: ref } of this.cache) {
+    for (const { i, type, value } of this.cache) {
       if (type === ARRAY)
-        array(ref, values[i]);
+        array(value, values[i]);
       else {
-        const { k: different, v: node } = diff(ref, values[i]);
+        const { k: different, v: node } = diff(value, values[i]);
         values[i] = different ? node.valueOf() : node;
       }
     }

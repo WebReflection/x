@@ -6,15 +6,40 @@
   "main": "./src/html.js",
   "module": "./src/html.js",
   "exports": {
-    ".": "./x.js",
-    "./attributes": "./src/handle/attr.js",
-    "./differ": "./src/handle/diff.js",
-    "./fragment": "./src/classes/fragment.js",
-    "./html": "./src/html.js",
-    "./pony": "./src/pony.js",
-    "./tag": "./src/tag.js",
-    "./text": "./src/handle/text.js",
-    "./utils": "./src/utils.js"
+    ".": {
+      "import": "./x.js"
+    },
+    "./attributes": {
+      "import": "./src/handle/attr.js",
+      "types": "./types/handle/attr.d.ts"
+    },
+    "./differ": {
+      "import": "./src/handle/diff.js",
+      "types": "./types/handle/diff.d.ts"
+    },
+    "./fragment": {
+      "import": "./src/classes/fragment.js",
+      "types": "./types/classes/fragment.d.ts"
+    },
+    "./html": {
+      "import": "./src/html.js",
+      "types": "./types/html.d.ts"
+    },
+    "./pony": {
+      "import": "./src/pony.js"
+    },
+    "./tag": {
+      "import": "./src/tag.js",
+      "types": "./types/tag.d.ts"
+    },
+    "./text": {
+      "import": "./src/handle/text.js",
+      "types": "./types/handle/text.d.ts"
+    },
+    "./utils": {
+      "import": "./src/utils.js",
+      "types": "./src/utils.d.ts"
+    }
   },
   "files": [
     "./src/",
@@ -24,7 +49,8 @@
   ],
   "scripts": {
     "build": "rollup --config build.js && node pony.js && npm run size",
-    "size": "cat x.js | brotli | wc -c"
+    "size": "cat x.js | brotli | wc -c",
+    "types": "rm -rf types && npx tsc -p tsconfig.json; sed -i 's/export { empty }/export const empty: never[]/' types/utils.d.ts"
   },
   "keywords": [
     "template",
@@ -46,6 +72,7 @@
   "devDependencies": {
     "@rollup/plugin-node-resolve": "^15.3.0",
     "@rollup/plugin-terser": "^0.4.4",
-    "rollup": "^4.24.0"
+    "rollup": "^4.24.0",
+    "typescript": "^5.6.3"
   }
 }
