@@ -18,7 +18,7 @@ import { html, svg } from './create.js';
 import { attribute, empty, isArray, isObject } from './utils.js';
 
 import keyed from './handle/keyed.js';
-import nonKeyed from './handle/non-keyed.js';
+import nonKeyed from './handle/node.js';
 
 const { indexOf } = empty;
 
@@ -123,8 +123,8 @@ export default SVG => {
     return (key < 0 ? nonKeyed : keyed)(
       node,
       i ? paths : empty,
-      holes.length ? holes : empty,
       update,
+      holes.length ? holes : empty,
       key
     );
   };

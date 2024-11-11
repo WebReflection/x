@@ -1,5 +1,3 @@
-import noop from '@webreflection/empty/arrow';
-
 import {
   ATTRIBUTE_NODE,
   COMMENT_NODE,
@@ -80,9 +78,7 @@ export const tag = (SVG, attr, diff, text) => {
      * @param {AttributeDetails} kv
      * @returns
      */
-    [ATTRIBUTE_NODE]: (node, once, extra) => (
-      extra ? attr[extra.k](node, extra.v, once, SVG) : noop
-    ),
+    [ATTRIBUTE_NODE]: (node, once, { k, v }) => attr[k](node, v, once, SVG),
     /**
      * @param {Comment} node
      * @param {boolean} once
