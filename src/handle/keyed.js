@@ -10,7 +10,7 @@ const fr = new FinalizationRegistry(
  * @param {Node} node
  * @param {import("../classes/path.js").AnyPath[]} paths
  * @param {import("../classes/key-value.js").HoleDetails[]} holes
- * @param {any} update
+ * @param {import("../tag.js").Update} update
  * @param {number} key
  * @returns
  */

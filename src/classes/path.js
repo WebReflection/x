@@ -6,17 +6,17 @@ import { ATTRIBUTE_NODE, COMMENT_NODE, ELEMENT_NODE } from '../constants.js';
 
 /** @typedef {AttributePath | CommentPath | TextPath} AnyPath */
 /** @typedef {import("./key-value.js").AttributeDetails} AttributeDetails */
-/** @typedef {Path<ATTRIBUTE_NODE, number[], AttributeDetails>} AttributePath */
+/** @typedef {Path<ATTRIBUTE_NODE, AttributeDetails>} AttributePath */
 /** @typedef {import("./key-value.js").CommentDetails} CommentDetails */
-/** @typedef {Path<COMMENT_NODE, number[], CommentDetails>} CommentPath */
-/** @typedef {Path<ELEMENT_NODE, number[], null>} TextPath */
+/** @typedef {Path<COMMENT_NODE, CommentDetails>} CommentPath */
+/** @typedef {Path<ELEMENT_NODE, null>} TextPath */
 
-/** @template T,P,E */
+/** @template T,E */
 export default class Path {
   /**
    * @param {T} type
-   * @param {P} path
-   * @param {E} extra
+   * @param {number[]} path
+   * @param {E?} extra
    */
   constructor(type, path, extra) {
     this.type = type;

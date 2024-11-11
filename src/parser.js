@@ -49,7 +49,7 @@ export default SVG => {
    * @param {TemplateStringsArray | string[]} template
    * @param {any[]} values
    * @param {Set<string>} attr
-   * @param {unknown} update
+   * @param {import("./tag.js").Update} update
    * @returns
    */
   return (template, values, attr, update) => {

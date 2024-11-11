@@ -13,6 +13,7 @@ import parser from './parser.js';
 /** @typedef {import("./classes/fragment.js").default} Fragment */
 /** @typedef {import("./classes/key-value.js").HoleDetails} HoleDetails */
 /** @typedef {import("./classes/key-value.js").TagResult} TagResult */
+/** @typedef {{2: (node:Element, once:boolean, kv:import("./classes/key-value.js").AttributeDetails) => any, 8: (node:Comment, once:boolean, hint:import("./handle/diff.js").HINT) => (node:Element, hint:import("./handle/diff.js").HINT, once:boolean) => ((curr:Node[]) => void) | ((curr:string?) => void) | ((curr:Node) => void), 1: (node:HTMLElement, once:boolean) => (curr:any?) => void}} Update */
 
 const DirectWeakMap = direct(WeakMap);
 
@@ -43,12 +44,16 @@ let resolve = once;
 export const render = (where, what) => {
   const resolver = resolve;
   resolve = many;
-  const { k: different, v: node } = diff(
-    dwm.get(where) || dwm.set(where, new Stack),
-    what()
-  );
-  if (different) where.replaceChildren(node.valueOf());
-  resolve = resolver;
+  try {
+    const { k: different, v: node } = diff(
+      dwm.get(where) || dwm.set(where, new Stack),
+      what()
+    );
+    if (different) where.replaceChildren(node.valueOf());
+  }
+  finally {
+    resolve = resolver;
+  }
   return where;
 };
 

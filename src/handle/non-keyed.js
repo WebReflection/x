@@ -9,7 +9,7 @@ import { empty } from '../utils.js';
  * @param {Node} node
  * @param {import("../classes/path.js").AnyPath[]} paths
  * @param {import("../classes/key-value.js").HoleDetails[]} holes
- * @param {any} update
+ * @param {import("../tag.js").Update} update
  * @returns
  */
 export default (node, paths, holes, update) => {
