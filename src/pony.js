@@ -18,11 +18,11 @@ export default document => {
   
   class Hole {
     /**
-     * @param {import("../types.js").Node} node
+     * @param {import("../types.js").Node} key
      * @param {unknown[]} values
      */
-    constructor(node, values) {
-      this.k = node;
+    constructor(key, values) {
+      this.k = key;
       this.v = values;
     }
   }
@@ -48,8 +48,6 @@ export default document => {
   const abc = (a, b, c) => ({ a, b, c });
   const kv = (k, v) => ({ k, v });
   
-  const info = (update) => ({ update });
-  
   /**
    * @typedef {Object} ReplaceChildren
    * @prop {(node:Node) => void} replaceChildren
@@ -64,18 +62,18 @@ export default document => {
   
   /**
    * @param {Stack[]} cache
-   * @param {import("../types.js").Hole[]} holes
+   * @param {import("../types.js").Hole[]} values
    */
-  const array$1 = (cache, holes) => {
-    const { length } = holes;
+  const array$1 = (cache, values) => {
+    const { length } = values;
     if (length < cache.length)
       cache.splice(length);
     for (let i = 0; i < length; i++) {
       const { v: node } = diff$3(
         cache[i] || (cache[i] = new Stack),
-        holes[i]
+        values[i]
       );
-      holes[i] = node;
+      values[i] = node;
     }
   };
   
@@ -85,9 +83,9 @@ export default document => {
     static diff = diff$3;
   
     /** @type {import("../types.js").Node | import("../types.js").Keyed | null} */
-    node = null;
+    holes = null;
     /** @type {{ update: (values: unknown[]) => GenericNode }?} */
-    value = null;
+    update = null;
     /** @type {[number, number, Stack | Stack[]][]} */
     cache = empty;
   
@@ -95,11 +93,10 @@ export default document => {
      * @param {import("../types.js").Hole} hole
      * @returns {boolean}
      */
-    as(node) {
-      if (this.node !== node) {
-        const { holes } = node;
-        this.node = node;
-        this.value = node.create(false);
+    as({ k: holes, v: create }) {
+      if (this.holes !== holes) {
+        this.holes = holes;
+        this.update = create(false);
         this.cache = holes.length ? holes.map(entries$1) : empty;
         return true;
       }
@@ -119,7 +116,7 @@ export default document => {
           values[i] = different ? node.valueOf() : node;
         }
       }
-      return this.value.update(values);
+      return this.update(values);
     }
   }
   
@@ -160,6 +157,37 @@ export default document => {
         hole => hole === '\x01' ? `<!--${prefix + i++}-->` : (prefix + i++)
       )
     ;
+  };
+  
+  const getContent = fragment => {
+    const { firstChild: $, lastChild } = fragment;
+    // empty html`` fragments or html`${[]}` cases
+    return $ && $ === lastChild && $.nodeType !== COMMENT_NODE ?
+      fragment.removeChild($) : fragment;
+  };
+  
+  let template = document.createElement('template');
+  
+  /** @type {(text:string) => DocumentFragment | HTMLElement | Node} */
+  const html$1 = text => {
+    template.innerHTML = text;
+    const { content } = template;
+    const node = getContent(content);
+    if (node === content) template = template.cloneNode(false);
+    return node;
+  };
+  
+  let range;
+  
+  /** @type {(text:string) => DocumentFragment | SVGElement | Node} */
+  const svg$1 = text => {
+    if (!range) {
+      range = document.createRange();
+      range.selectNodeContents(
+        document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+      );
+    }
+    return getContent(range.createContextualFragment(text));
   };
   
   const {setPrototypeOf} = Object;
@@ -259,109 +287,50 @@ export default document => {
     }
   }
   
-  class Node {
-    /**
-     * @param {import("../types.js").GenericNode} node
-     * @param {import("../types.js").Path[]} paths
-     */
-    constructor(node, paths, holes, update) {
-      this.type = node.nodeType;
-      this.node = node;
-      this.paths = paths;
-      this.holes = holes;
-      this.update = update;
-    }
-  
-    /**
-     * @param {import("../types.js").Update} update
-     * @param {boolean} once
-     * @returns
-     */
-    create(once) {
-      const { type, node, paths, update } = this;
-      const { length } = paths;
-      const updates = length ? [] : empty;
-      let dom = document.importNode(node, true);
-      for (let prevPath = empty, node = dom, i = 0; i < length; i++) {
-        const { a: type, b: path, c: extra } = paths[i];
-        // speed up multiple attributes per same node
-        if (prevPath !== path) {
-          prevPath = path;
-          node = dom;
-          for (let { length: i } = path; i--; node = node.childNodes[path[i]]);
+  var nonKeyed = (node, paths, holes, update) => {
+    const isFragment = node.nodeType === DOCUMENT_FRAGMENT_NODE;
+    return kv(
+      holes,
+      once => {
+        const { length } = paths;
+        const updates = length ? [] : empty;
+        let dom = document.importNode(node, true);
+        for (let prevPath = empty, node = dom, i = 0; i < length; i++) {
+          const { a: type, b: path, c: extra } = paths[i];
+          // speed up multiple attributes per same node
+          if (prevPath !== path) {
+            prevPath = path;
+            node = dom;
+            for (let { length: i } = path; i--; node = node.childNodes[path[i]]);
+          }
+          updates[i] = update[type](node, once, extra);
         }
-        updates[i] = update[type](node, once, extra);
-      }
-      if (type === DOCUMENT_FRAGMENT_NODE) dom = new Fragment(dom);
-      return info(
-        values => {
+        if (isFragment) dom = new Fragment(dom);
+        return values => {
           for (let i = 0; i < length; i++) updates[i](values[i]);
           return dom;
-        }
-      );
-    }
-  }
-  
-  const fr = new FinalizationRegistry(([map, value]) => { map.delete(value); });
-  
-  class Keyed extends Node {
-    constructor(node, paths, holes, update, key) {
-      super(node, paths, holes, update);
-      this.key = key;
-      this.map = new Map;
-    }
-    /**
-     * @param {import("../types.js").Update} update
-     * @param {boolean} once
-     * @returns {{update: (values: unknown[]) => GenericNode}}
-     */
-    create(once) {
-      const { key, map } = this;
-      const wrap = info(
-        values => {
-          const value = values[key];
-          let info = map.get(value);
-          if (!info) {
-            info = super.create(once);
-            map.set(value, info);
-            fr.register(wrap, [map, value]);
-          }
-          return info.update(values);
-        }
-      );
-      return wrap;
-    }
-  }
-  
-  const getContent = fragment => {
-    const { firstChild: $, lastChild } = fragment;
-    // empty html`` fragments or html`${[]}` cases
-    return $ && $ === lastChild && $.nodeType !== COMMENT_NODE ?
-      fragment.removeChild($) : fragment;
+        };
+      }
+    );
   };
   
-  let template = document.createElement('template');
+  const fr = new FinalizationRegistry(
+    ([map, value]) => { map.delete(value); }
+  );
   
-  /** @type {(text:string) => DocumentFragment | HTMLElement | Node} */
-  const html$1 = text => {
-    template.innerHTML = text;
-    const { content } = template;
-    const node = getContent(content);
-    if (node === content) template = template.cloneNode(false);
-    return node;
-  };
-  
-  let range;
-  
-  /** @type {(text:string) => DocumentFragment | SVGElement | Node} */
-  const svg$1 = text => {
-    if (!range) {
-      range = document.createRange();
-      range.selectNodeContents(
-        document.createElementNS('http://www.w3.org/2000/svg', 'svg')
-      );
-    }
-    return getContent(range.createContextualFragment(text));
+  var keyed = (node, paths, holes, update, key) => {
+    const map = new Map;
+    const { v: create } = nonKeyed(node, paths, holes, update);
+    return kv(holes, once => function ref(values) {
+      const value = values[key];
+      let update = map.get(value);
+      if (!update) {
+        update = create(once);
+        map.set(value, update);
+        fr.register(ref, [map, value]);
+      }
+      return update(values);
+    });
   };
   
   const { indexOf } = empty;
@@ -433,8 +402,7 @@ export default document => {
               currentNode.removeAttribute(search);
               i = paths.push(abc(ATTRIBUTE_NODE, path, extra));
             }
-            // text only elements:
-            // plaintext, script, style, textarea, title, xmp
+            // text only elements: plaintext, script, style, textarea, title, xmp
             if (
               !SVG &&
               TEXT_ELEMENTS.test(currentNode.localName) &&
@@ -451,8 +419,7 @@ export default document => {
       for (const comment of comments)
         comment.replaceWith(document.createTextNode(''));
   
-      const Class = key < 0 ? Node : Keyed;
-      return new Class(
+      return (key < 0 ? nonKeyed : keyed)(
         node,
         i ? paths : empty,
         holes.length ? holes : empty,
@@ -468,11 +435,11 @@ export default document => {
   const { diff: diff$2 } = Stack;
   
   /**
-   * @param {import("./types.js").Node} node
+   * @param {import("./types.js").Node} kv
    * @param {unknown[]} values
    * @returns {import("./types.js").ParsedNode}
    */
-  const once = (node, values) => node.create(true).update(values);
+  const once = ({ v: create }, values) => create(true)(values);
   
   /**
    * @param {import("./types.js").Node} node
@@ -881,7 +848,5 @@ export default document => {
   const html = tag(false, attr, diff$1, text);
   const svg = tag(true, attr, diff$1, text);
   
-  // return const component = callback => (...args) => () => callback(...args);
-  
-  export { html, render, svg };
+  return { html, render, svg };
 };

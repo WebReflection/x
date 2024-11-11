@@ -20,18 +20,18 @@ const diff = (stack, { k, v }) => kv(stack.as(k), stack.get(v));
 
 /**
  * @param {Stack[]} cache
- * @param {import("../types.js").Hole[]} holes
+ * @param {import("../types.js").Hole[]} values
  */
-const array = (cache, holes) => {
-  const { length } = holes;
+const array = (cache, values) => {
+  const { length } = values;
   if (length < cache.length)
     cache.splice(length);
   for (let i = 0; i < length; i++) {
     const { v: node } = diff(
       cache[i] || (cache[i] = new Stack),
-      holes[i]
+      values[i]
     );
-    holes[i] = node;
+    values[i] = node;
   }
 };
 
@@ -41,9 +41,9 @@ export default class Stack {
   static diff = diff;
 
   /** @type {import("../types.js").Node | import("../types.js").Keyed | null} */
-  node = null;
+  holes = null;
   /** @type {{ update: (values: unknown[]) => GenericNode }?} */
-  value = null;
+  update = null;
   /** @type {[number, number, Stack | Stack[]][]} */
   cache = empty;
 
@@ -51,11 +51,10 @@ export default class Stack {
    * @param {import("../types.js").Hole} hole
    * @returns {boolean}
    */
-  as(node) {
-    if (this.node !== node) {
-      const { holes } = node;
-      this.node = node;
-      this.value = node.create(false);
+  as({ k: holes, v: create }) {
+    if (this.holes !== holes) {
+      this.holes = holes;
+      this.update = create(false);
       this.cache = holes.length ? holes.map(entries) : empty;
       return true;
     }
@@ -75,6 +74,6 @@ export default class Stack {
         values[i] = different ? node.valueOf() : node;
       }
     }
-    return this.value.update(values);
+    return this.update(values);
   }
 }

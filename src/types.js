@@ -1,7 +1,7 @@
 /** @typedef {import("./classes/fragment.js").default} Fragment */
 /** @typedef {import("./classes/hole.js").default} Hole */
-/** @typedef {import("./classes/keyed.js").default} Keyed */
-/** @typedef {import("./classes/node.js").default} Node */
+/** @typedef {import("./handle/keyed.js").default} Keyed */
+/** @typedef {import("./handle/non-keyed.js").default} Node */
 /** @typedef {import("./classes/stack.js").default} Stack */
 
 /** @typedef {string} AttributeName */

@@ -16,11 +16,11 @@ const dwm = new DirectWeakMap;
 const { diff } = Stack;
 
 /**
- * @param {import("./types.js").Node} node
+ * @param {import("./types.js").Node} kv
  * @param {unknown[]} values
  * @returns {import("./types.js").ParsedNode}
  */
-const once = (node, values) => node.create(true).update(values);
+const once = ({ v: create }, values) => create(true)(values);
 
 /**
  * @param {import("./types.js").Node} node

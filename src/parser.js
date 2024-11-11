@@ -12,12 +12,13 @@ import {
 import parser from '@webreflection/uparser';
 
 import Hole from './classes/hole.js';
-import Keyed from './classes/keyed.js';
-import Node from './classes/node.js';
 
 import { html, svg } from './create.js';
 import { attribute, empty, isArray, isObject } from './utils.js';
 import { abc, kv } from './literals.js';
+
+import keyed from './handle/keyed.js';
+import nonKeyed from './handle/non-keyed.js';
 
 const { indexOf } = empty;
 
@@ -88,8 +89,7 @@ export default SVG => {
             currentNode.removeAttribute(search);
             i = paths.push(abc(ATTRIBUTE_NODE, path, extra));
           }
-          // text only elements:
-          // plaintext, script, style, textarea, title, xmp
+          // text only elements: plaintext, script, style, textarea, title, xmp
           if (
             !SVG &&
             TEXT_ELEMENTS.test(currentNode.localName) &&
@@ -106,8 +106,7 @@ export default SVG => {
     for (const comment of comments)
       comment.replaceWith(document.createTextNode(''));
 
-    const Class = key < 0 ? Node : Keyed;
-    return new Class(
+    return (key < 0 ? nonKeyed : keyed)(
       node,
       i ? paths : empty,
       holes.length ? holes : empty,
