@@ -36,7 +36,6 @@ const map = node => {
   return i ? path : empty;
 };
 
-const keyValue = new KeyValue('key', '');
 const prefix = 'isµ';
 
 /**
@@ -81,17 +80,18 @@ export default SVG => {
           break;
         }
         case ELEMENT_NODE: {
-          let path, search;
+          let path, search, name;
           // attributes
-          while (currentNode.hasAttribute((search = prefix + i))) {
-            const name = currentNode.getAttribute(search);
-            let extra = keyValue;
+          while ((name = currentNode.getAttribute((search = prefix + i)))) {
+            let extra = null;
             if (name === 'key') key = i;
             else {
               const c = name[0];
-              const k = attr.has(c) ? c : (attr.has(name) ? name : attribute);
-              /** @type {KeyValue<string, string>} */
-              extra = new KeyValue(k, c === k ? name.slice(1) : name);
+              const s = attr.has(c);
+              extra = new KeyValue(
+                s ? c : (attr.has(name) ? name : attribute),
+                s ? name.slice(1) : name
+              );
             }
             path ??= map(currentNode);
             currentNode.removeAttribute(search);

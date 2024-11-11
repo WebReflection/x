@@ -2,8 +2,6 @@ import { attribute, isArray } from '../utils.js';
 
 const { entries } = Object;
 
-const key = () => key;
-
 /**
  * @param {any | any[]} value
  * @returns {any[]}
@@ -116,8 +114,6 @@ export default {
     value => setProperty(node, prop, value) :
     storeValueFor(setProperty, node, prop, null)
   ,
-  // SPECIAL KEY HANDLER
-  key,
   // SPECIAL ATTRIBUTES
   /**
    * Aria attributes as object literal
