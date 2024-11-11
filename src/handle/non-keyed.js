@@ -15,7 +15,6 @@ import { empty } from '../utils.js';
 export default (node, paths, holes, update) => {
   const isFragment = node.nodeType === DOCUMENT_FRAGMENT_NODE;
   return new KeyValue(
-    holes,
     /**
      * @param {boolean} once
      * @returns {(values:any[]) => Node}
@@ -26,7 +25,7 @@ export default (node, paths, holes, update) => {
       let dom = document.importNode(node, true);
       for (let prevPath = empty, node = dom, i = 0; i < length; i++) {
         const { type, path, extra } = paths[i];
-        // speed up multiple attributes per same node
+        // speed up multiple attributes per same node + text nodes w/ attributes
         if (prevPath !== path) {
           prevPath = path;
           node = dom;
@@ -39,6 +38,7 @@ export default (node, paths, holes, update) => {
         for (let i = 0; i < length; i++) updates[i](values[i]);
         return dom;
       };
-    }
+    },
+    holes
   );
 };

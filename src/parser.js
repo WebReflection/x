@@ -67,11 +67,16 @@ export default SVG => {
           // holes
           if (currentNode.data === (prefix + i)) {
             const value = values[i];
-            const extra = isObject(value) ?
-              (value instanceof KeyValue ?
-                HOLE : (isArray(value) ? ARRAY : OBJECT)) :
-              ANY
-            ;
+            const extra = value instanceof KeyValue ? HOLE : (
+              isArray(value) ? ARRAY : (
+                isObject(value) ? OBJECT : ANY
+              )
+            );
+            // const extra = isObject(value) ?
+            //   (value instanceof KeyValue ?
+            //     HOLE : (isArray(value) ? ARRAY : OBJECT)) :
+            //   ANY
+            // ;
             if (extra === ANY) comments.push(currentNode);
             // TODO: objects as holes is currently not supported
             else if (extra !== OBJECT) holes.push(new KeyValue(i, extra));

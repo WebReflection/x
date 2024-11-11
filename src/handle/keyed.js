@@ -16,9 +16,8 @@ const fr = new FinalizationRegistry(
  */
 export default (node, paths, holes, update, key) => {
   const map = new Map;
-  const { v: create } = nonKeyed(node, paths, holes, update);
+  const { k: create } = nonKeyed(node, paths, holes, update);
   return new KeyValue(
-    holes,
     /**
      * @param {boolean} once
      * @returns {(values:any[]) => Node}
@@ -32,6 +31,7 @@ export default (node, paths, holes, update, key) => {
         fr.register(ref, [map, value]);
       }
       return update(values);
-    }
+    },
+    holes
   );
 };

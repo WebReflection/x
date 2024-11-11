@@ -7,8 +7,8 @@
 /** @typedef {KeyValue<number, ANY | ARRAY | HOLE | OBJECT>} CommentDetails */
 /** @typedef {(once: boolean) => (values: any[]) => Node} CreateUpdate */
 /** @typedef {KeyValue<number, ARRAY | HOLE>} HoleDetails */
-/** @typedef {KeyValue<HoleDetails[], CreateUpdate>} Keyed */
-/** @typedef {KeyValue<HoleDetails[], CreateUpdate>} NonKeyed */
+/** @typedef {KeyValue<CreateUpdate, HoleDetails[]>} Keyed */
+/** @typedef {KeyValue<CreateUpdate, HoleDetails[]>} NonKeyed */
 /** @typedef {KeyValue<Keyed | NonKeyed, any[]>} TagResult */
 
 /** @template K,V */

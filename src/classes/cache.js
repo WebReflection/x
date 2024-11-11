@@ -1,6 +1,6 @@
-
-/** @typedef {Cache<import("../constants.js").ARRAY, import("./stack.js").default[]>} CachedArray */
-/** @typedef {Cache<import("../constants.js").HOLE, import("./stack.js").default>} CachedStack */
+/** @typedef {import("./stack.js").default} Stack */
+/** @typedef {Cache<import("../constants.js").ARRAY, Stack[]>} CachedArray */
+/** @typedef {Cache<import("../constants.js").HOLE, Stack>} CachedStack */
 /** @typedef {CachedArray | CachedStack} CachedEntries */
 
 /** @template T,V */

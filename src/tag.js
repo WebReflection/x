@@ -12,10 +12,13 @@ import Stack from './classes/stack.js';
 import { direct, keys } from './utils.js';
 import parser from './parser.js';
 
+/** @typedef {import("./handle/diff.js").HINT} HINT */
 /** @typedef {import("./classes/fragment.js").default} Fragment */
-/** @typedef {import("./classes/key-value.js").HoleDetails} HoleDetails */
+/** @typedef {import("./classes/key-value.js").Keyed} Keyed */
+/** @typedef {import("./classes/key-value.js").AttributeDetails} AttributeDetails */
+/** @typedef {import("./classes/key-value.js").NonKeyed} NonKeyed */
 /** @typedef {import("./classes/key-value.js").TagResult} TagResult */
-/** @typedef {{2: (node:Element, once:boolean, kv:import("./classes/key-value.js").AttributeDetails) => any, 8: (node:Comment, once:boolean, hint:import("./handle/diff.js").HINT) => (node:Element, hint:import("./handle/diff.js").HINT, once:boolean) => ((curr:Node[]) => void) | ((curr:string?) => void) | ((curr:Node) => void), 1: (node:HTMLElement, once:boolean) => (curr:any?) => void}} Update */
+/** @typedef {{2: (node:Element, once:boolean, kv:AttributeDetails) => any, 8: (node:Comment, once:boolean, hint:HINT) => (node:Element, hint:HINT, once:boolean) => ((curr:Node[]) => void) | ((curr:string?) => void) | ((curr:Node) => void), 1: (node:HTMLElement, once:boolean) => (curr:any?) => void}} Update */
 
 const DirectWeakMap = direct(WeakMap);
 
@@ -23,14 +26,14 @@ const dwm = new DirectWeakMap;
 const { diff } = Stack;
 
 /**
- * @param {KeyValue<HoleDetails[], (once: boolean) => (values: any[]) => Node>} details
+ * @param {Keyed | NonKeyed} details
  * @param {any[]} values
  * @returns
  */
 const once = ({ v: create }, values) => create(true)(values);
 
 /**
- * @param {KeyValue<HoleDetails[], (once: boolean) => (values: any[]) => Node>} details
+ * @param {Keyed | NonKeyed} details
  * @param {any[]} values
  * @returns
  */
@@ -74,7 +77,7 @@ export const tag = (SVG, attr, diff, text) => {
     /**
      * @param {Element} node
      * @param {boolean} once
-     * @param {import("./classes/key-value.js").AttributeDetails} kv
+     * @param {AttributeDetails} kv
      * @returns
      */
     [ATTRIBUTE_NODE]: (node, once, extra) => (
@@ -83,7 +86,7 @@ export const tag = (SVG, attr, diff, text) => {
     /**
      * @param {Comment} node
      * @param {boolean} once
-     * @param {import("./handle/diff.js").HINT} hint
+     * @param {HINT} hint
      * @returns
      */
     [COMMENT_NODE]: (node, once, hint) => diff(node, hint, once, SVG),
