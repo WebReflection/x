@@ -3,13 +3,16 @@ import { ANY, ARRAY } from '../constants.js';
 import udomdiff from 'udomdiff';
 
 import Fragment from '../classes/fragment.js';
+const { diff } = Fragment;
 
 import { empty } from '../utils.js';
+
+const valueOf = node => node.valueOf();
+const remove = node => node.remove();
 
 /** @typedef {ANY | ARRAY | import("../constants.js").OBJECT} HINT */
 
 /**
- * 
  * @param {Text} node
  * @param {string?} prev
  * @returns {(curr:string?) => void}
@@ -21,7 +24,6 @@ const any = (node, prev) => curr => {
   }
 };
 
-const { diff } = Fragment;
 /**
  * 
  * @param {Comment} node
@@ -29,13 +31,25 @@ const { diff } = Fragment;
  * @returns {(curr:Node[]) => void}
  */
 const array = (node, prev) => curr => {
-  prev = udomdiff(
-    node.parentNode,
-    prev,
-    curr.length ? curr : empty,
-    diff,
-    node
-  );
+  if (curr.length) {
+    if (prev === empty) {
+      prev = curr.map(valueOf);
+      node.before(...prev);
+    }
+    else {
+      prev = udomdiff(
+        node.parentNode,
+        prev,
+        curr,
+        diff,
+        node
+      );
+    }
+  }
+  else {
+    prev.forEach(remove);
+    prev = empty;
+  }
 };
 
 /**
@@ -54,11 +68,14 @@ const object = prev => curr => {
  * @param {HINT} hint
  * @returns
  */
-const multi = (node, hint) => {
-  if (hint === ARRAY) return array(node, empty);
-  if (hint === ANY) return any(node, '');
-  return object(node);
-};
+const multi = (node, hint) => (
+  hint === ARRAY ?
+    array(node, empty) :
+    (hint === ANY ?
+      any(node, '') :
+      object(node)
+    )
+);
 
 /**
  * @param {Element} node
@@ -66,12 +83,8 @@ const multi = (node, hint) => {
  * @returns {(value: any) => void}
  */
 const oneOff = (node, hint) => value => {
-  if (hint === ARRAY) {
-    array(node, empty)(value);
-    node.remove();
-  }
-  else if (hint === ANY) any(node, '')(value);
-  else object(node)(value);
+  multi(node, hint)(value);
+  if (hint === ARRAY) node.remove();
 };
 
 /**
