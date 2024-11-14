@@ -1,6 +1,6 @@
 import { ANY, ARRAY } from '../constants.js';
 
-import udomdiff from 'udomdiff';
+import udomdiff from '../domdiff.js';
 
 import Fragment from '../classes/fragment.js';
 const { diff } = Fragment;
@@ -37,13 +37,7 @@ const array = (node, prev) => curr => {
       node.before(...prev);
     }
     else {
-      prev = udomdiff(
-        node.parentNode,
-        prev,
-        curr,
-        diff,
-        node
-      );
+      prev = udomdiff(prev, curr, diff, node);
     }
   }
   else {
