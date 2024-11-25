@@ -1,6 +1,6 @@
 import KeyValue from '../classes/key-value.js';
 
-import create from './creation.js';
+import create from './create.js';
 
 /**
  * @param {Node} node
