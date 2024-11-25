@@ -1,4 +1,4 @@
-import { ATTRIBUTE_NODE, COMMENT_NODE, ELEMENT_NODE } from '../constants.js';
+// @ts-check
 
 /** @typedef {import("../constants.js").ATTRIBUTE_NODE} ATTRIBUTE_NODE */
 /** @typedef {import("../constants.js").COMMENT_NODE} COMMENT_NODE */

@@ -10,6 +10,7 @@
       domconstants/re
       create-contextual-content
       @webreflection/empty/array
+      @webreflection/empty/arrow
       @webreflection/uparser
       udomdiff
       uhtml
@@ -19,7 +20,9 @@
     src="https://esm.run/data-imports"
   ></script>
   <script type="module">
-    import { component, render, html, svg } from '../src/basic.js';
+    import { render, html, svg } from '../src/html.js';
+
+    const component = fn => (...args) => () => fn(...args);
 
     const content = () => {
       const fragment = html`<hr /><hr />`;

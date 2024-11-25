@@ -1,3 +1,5 @@
+// @ts-check
+
 /** @typedef {import("../constants.js").ANY} ANY */
 /** @typedef {import("../constants.js").ARRAY} ARRAY */
 /** @typedef {import("../constants.js").HOLE} HOLE */

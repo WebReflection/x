@@ -1,3 +1,5 @@
+// @ts-check
+
 export {
   ATTRIBUTE_NODE,
   COMMENT_NODE,

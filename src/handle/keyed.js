@@ -1,3 +1,5 @@
+// @ts-check
+
 import KeyValue from '../classes/key-value.js';
 
 import create from './create.js';

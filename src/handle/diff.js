@@ -82,7 +82,7 @@ const oneOff = (node, hint) => value => {
 };
 
 /**
- * @param {Element} node
+ * @param {Node} node
  * @param {HINT} hint
  * @param {boolean} once
  */

@@ -1,3 +1,5 @@
+// @ts-check
+
 import {
   ATTRIBUTE_NODE,
   COMMENT_NODE,
@@ -7,7 +9,7 @@ import {
 import KeyValue from './classes/key-value.js';
 import Stack from './classes/stack.js';
 
-import { direct, keys } from './utils.js';
+import { keys } from './utils.js';
 import parser from './parser.js';
 
 /** @typedef {import("./handle/diff.js").HINT} HINT */
@@ -16,9 +18,20 @@ import parser from './parser.js';
 /** @typedef {import("./classes/key-value.js").AttributeDetails} AttributeDetails */
 /** @typedef {import("./classes/key-value.js").NonKeyed} NonKeyed */
 /** @typedef {import("./classes/key-value.js").TagResult} TagResult */
-/** @typedef {{2: (node:Element, once:boolean, kv:AttributeDetails) => any, 8: (node:Comment, once:boolean, hint:HINT) => (node:Element, hint:HINT, once:boolean) => ((curr:Node[]) => void) | ((curr:string?) => void) | ((curr:Node) => void), 1: (node:HTMLElement, once:boolean) => (curr:any?) => void}} Update */
+/** @typedef {{2: (node: Element, once: boolean, { k, v }: AttributeDetails) => any, 8: (node: Comment, once: boolean, hint: HINT) => ((curr: Node[]) => void) | ((curr: Node) => void) | ((curr: string | null) => void), 1: (node: HTMLElement, once: boolean) => (curr: any | null) => void}} Update */
 
-const DirectWeakMap = direct(WeakMap);
+// @ts-ignore
+class DirectWeakMap extends WeakMap {
+  /**
+   * @param {WeakKey} key
+   * @param {any} value
+   * @returns
+   */
+  set(key, value) {
+    super.set(key, value);
+    return value;
+  }
+}
 
 const dwm = new DirectWeakMap;
 const { diff } = Stack;
@@ -28,7 +41,7 @@ const { diff } = Stack;
  * @param {any[]} values
  * @returns
  */
-const once = ({ v: create }, values) => create(true)(values);
+const once = ({ k: create }, values) => create(true)(values);
 
 /**
  * @param {Keyed | NonKeyed} details
@@ -46,13 +59,18 @@ let resolve = once;
  */
 export const render = (where, what) => {
   const resolver = resolve;
+  // @ts-ignore
   resolve = many;
   try {
     const { k: different, v: node } = diff(
       dwm.get(where) || dwm.set(where, new Stack),
       what()
     );
-    if (different) where.replaceChildren(node.valueOf());
+    if (different) {
+      where.replaceChildren(
+        /** @type {Node} */ (node.valueOf())
+      );
+    }
   }
   finally {
     resolve = resolver;
@@ -85,13 +103,13 @@ export const tag = (SVG, attr, diff, text) => {
      * @param {HINT} hint
      * @returns
      */
-    [COMMENT_NODE]: (node, once, hint) => diff(node, hint, once, SVG),
+    [COMMENT_NODE]: (node, once, hint) => diff(node, hint, once),
     [ELEMENT_NODE]: text,
   };
   /**
    * @param {TemplateStringsArray | string[]} t
    * @param {...any} v
-   * @returns {Fragment | Node | TagResult}
+   * @returns {Node | TagResult}
    */
   return (t, ...v) => resolve(
     dwm.get(t) || dwm.set(t, parse(t, v, attributes, update)),

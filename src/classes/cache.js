@@ -1,3 +1,5 @@
+// @ts-check
+
 /** @typedef {import("./stack.js").default} Stack */
 /** @typedef {Cache<import("../constants.js").ARRAY, Stack[]>} CachedArray */
 /** @typedef {Cache<import("../constants.js").HOLE, Stack>} CachedStack */

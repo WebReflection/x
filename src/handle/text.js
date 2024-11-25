@@ -1,3 +1,5 @@
+// @ts-check
+
 /**
  * @param {HTMLElement} node
  * @param {any?} content

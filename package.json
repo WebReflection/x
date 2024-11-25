@@ -13,6 +13,10 @@
       "import": "./src/handle/attr.js",
       "types": "./types/handle/attr.d.ts"
     },
+    "./custom": {
+      "import": "./src/custom.js",
+      "types": "./types/handle/custom.d.ts"
+    },
     "./differ": {
       "import": "./src/handle/diff.js",
       "types": "./types/handle/diff.d.ts"
