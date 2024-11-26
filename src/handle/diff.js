@@ -1,5 +1,6 @@
 import { ANY, ARRAY } from '../constants.js';
 
+// import udomdiff from 'udomdiff';
 import udomdiff from '../domdiff.js';
 
 import Fragment from '../classes/fragment.js';
@@ -31,18 +32,12 @@ const any = (node, prev) => curr => {
  * @returns {(curr:Node[]) => void}
  */
 const array = (node, prev) => curr => {
-  if (curr.length) {
-    if (prev === empty) {
-      prev = curr.map(valueOf);
-      node.before(...prev);
-    }
-    else {
-      prev = udomdiff(prev, curr, diff, node);
-    }
-  }
+  const { length } = curr;
+  if (length && prev !== empty)
+    prev = udomdiff(prev, curr, diff, node);
   else {
-    prev.forEach(remove);
-    prev = empty;
+    prev = length ? curr : empty;
+    node.parentNode.replaceChildren(...prev, node);
   }
 };
 

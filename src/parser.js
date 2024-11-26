@@ -28,12 +28,12 @@ const { indexOf } = empty;
  */
 const map = node => {
   const path = [];
-  let i = 0, parentNode;
+  let parentNode;
   while ((parentNode = node.parentNode)) {
-    path[i++] = indexOf.call(parentNode.childNodes, node);
+    path.push(indexOf.call(parentNode.childNodes, node));
     node = parentNode;
   }
-  return i ? path : empty;
+  return path.length ? path : empty;
 };
 
 const prefix = 'isµ';

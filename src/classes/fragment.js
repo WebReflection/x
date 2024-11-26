@@ -1,3 +1,5 @@
+// @wtf-ts-check
+
 import { COMMENT_NODE } from '../constants.js';
 
 import native from 'custom-function/factory';
@@ -10,23 +12,34 @@ export default class Fragment extends native(DocumentFragment) {
   /**
    * @param {Node | Fragment} node
    * @param {1 | 0 | -0 | -1} op
-   * @returns {Node | Fragment}
+   * @returns
    */
-  static diff = (node, op) => active && node instanceof Fragment ?
-    ((1 / op) < 0 ?
-      (op ? /* remove */ node.#remove(true) : /* after */ node.#lastChild) :
-      (op ? /* insert */ node.valueOf() : /* before */ node.#firstChild)) :
-    node
-  ;
+  static diff = (node, op) => /** @type {Node | Fragment} */(
+    active && node instanceof Fragment ?
+      ((1 / op) < 0 ?
+        (op ? /* remove */ node.#remove(true) : /* after */ node.lastChild) :
+        (op ? /* insert */ node.valueOf() : /* before */ node.firstChild)) :
+      node
+  );
 
   // privates
-  #firstChild;  // the virtual firstChild as reference
-  #lastChild;   // the virtual lastChild as reference
+  /** @type {Node[]} */
+  #childNodes;
+
+  /**
+   * @param {Node} child
+   * @param {0 | 1} op
+   * @param  {...Node} rest
+   */
+  #splice(child, op, ...rest) {
+    const i = this.#childNodes.indexOf(child);
+    if (-1 < i) this.#childNodes.splice(i, op, ...rest);
+  }
 
   /**
    * Drop known nodes from their parents and optionally keep its lastChild in there
    * @param {boolean} keepLast
-   * @returns {ChildNode | void}
+   * @returns {Node | void}
    */
   #remove(keepLast) {
     let { childNodes } = this, lastChild;
@@ -40,26 +53,74 @@ export default class Fragment extends native(DocumentFragment) {
   constructor(fragment) {
     super(fragment);
     const firstChild = super.firstChild;
-    // empty html`` fragment or array as first node html`${[]}!`
-    this.#firstChild = !firstChild || firstChild.nodeType === COMMENT_NODE ?
-      super.insertBefore(document.createComment('<>'), firstChild) :
-      firstChild;
-    this.#lastChild = super.lastChild;
+    // TODO: no need to check for the COMMENT_NODE ???
+    if (!firstChild || firstChild.nodeType === COMMENT_NODE)
+      super.insertBefore(document.createComment('<>'), firstChild);
+    this.#childNodes = [...super.childNodes];
     active = true;
   }
 
-  get firstChild() { return this.#firstChild; }
-  get lastChild() { return this.#lastChild; }
-  get parentNode() { return this.#lastChild.parentNode; }
+  /** @type {Node[]} */
+  get childNodes() { return this.#childNodes.slice(0) }
 
-  get childNodes() {
-    let firstChild = this.#firstChild, i = 0;
-    const childNodes = [firstChild], lastChild = this.#lastChild;
-    while (firstChild != lastChild) {
-      firstChild = firstChild.nextSibling;
-      childNodes[i++] = firstChild;
+  /** @type {Node?} */
+  get firstChild() { return this.#childNodes.at(0) }
+
+  /** @type {Node?} */
+  get lastChild() { return this.#childNodes.at(-1) }
+
+  get parentNode() { return this.#childNodes.at(-1).parentNode }
+
+  /** @type {<T extends Node>(node: T) => T} */
+  appendChild(child) {
+    this.#childNodes.push(child);
+    this.lastChild?.after(child);
+    return child;
+  }
+
+  /** @type {<T extends Node>(node: T, child: Node | null) => T} */
+  insertBefore(child, referenceNode) {
+    if (referenceNode) {
+      referenceNode.before(child);
+      this.#splice(referenceNode, 0, child);
     }
-    return childNodes;
+    else {
+      const { length } = this.#childNodes;
+      if (length) this.#childNodes[length - 1].after(child);
+      this.#childNodes[length] = child;
+    }
+    return child;
+  }
+
+  /**
+   * @param {Node} child 
+   * @param {Node?} referenceNode
+   * @returns
+   */
+  moveBefore(child, referenceNode) {
+    if (referenceNode) {
+      const { parentNode } = referenceNode;
+      // @ts-ignore
+      parentNode.moveBefore(child, referenceNode);
+      this.#splice(referenceNode, 0, child);
+    }
+    else
+      this.insertBefore(child, referenceNode);
+    return child;
+  }
+
+  /** @type {<T extends Node>(child: T) => T} */
+  removeChild(child) {
+    child.remove();
+    this.#splice(child, 1);
+    return child;
+  }
+
+  /** @type {<T extends Node>(node: Node, child: T) => T} */
+  replaceChild(child, referenceNode) {
+    referenceNode.replaceWith(child);
+    this.#splice(child, 1, referenceNode);
+    return referenceNode;
   }
 
   remove() { this.#remove(false); }
@@ -67,19 +128,13 @@ export default class Fragment extends native(DocumentFragment) {
   /** @param {Node} node */
   replaceWith(node) {
     const last = this.#remove(true);
-    const child = this.#lastChild;
-    // conflict with u/domdiff remove(true)
-    if (last !== child) super.appendChild(last);
-    // let it throw if child wasn't even connected
-    child.replaceWith(node);
+    if (last.isConnected)
+      child.replaceWith(node);
   }
 
   valueOf() {
-    const { parentNode } = this.#lastChild;
-    // fragment is not even connected
-    if (!parentNode) super.appendChild(this.#lastChild);
-    // fragment is being moved/appended elsewhere
-    else if (parentNode !== this) super.replaceChildren(...this.childNodes);
+    if (this.parentNode !== this)
+      super.replaceChildren(...this.#childNodes);
     return this;
   }
 }

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script
+    data-imports="
+      custom-function/factory
+      domconstants/constants
+      domconstants/re
+      create-contextual-content
+      @webreflection/empty/array
+      @webreflection/empty/arrow
+      @webreflection/uparser
+      udomdiff
+      uhtml
+      gc-hook
+      gc-hook/track
+    "
+    src="https://esm.run/data-imports"
+  ></script>
+  <script type="module">
+    import { render, html, svg } from '../src/html.js';
+
+    const update = data => {
+      render(document.body, () => html`
+        <table>
+          <tbody>
+            ${data.map(value => html`<tr><td>${value}</td></tr>`)}
+          </tbody>
+        </table>
+      `);
+    };
+
+    update([]);
+    setTimeout(update, 1000, ['a', 'b', 'c']);
+
+  </script>
+</head>
+</html>

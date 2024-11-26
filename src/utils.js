@@ -1,15 +1,15 @@
-import empty from '@webreflection/empty/array';
+// import empty from '@webreflection/empty/array';
 
 const { isArray } = Array;
+const { keys } = Object;
+export { isArray, keys };
+
+export const attribute = Symbol();
+
+export const empty = [];
 
 /**
  * @param {any} value
  * @returns
  */
-const isObject = value => value != null && typeof value === 'object';
-
-const attribute = Symbol();
-
-const { keys } = Object;
-
-export { attribute, empty, isArray, isObject, keys };
+export const isObject = value => typeof value === 'object' && value !== null;

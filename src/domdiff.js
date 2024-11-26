@@ -53,8 +53,8 @@ export default (a, b, get, before) => {
       // or asymmetric too
       // [1, 2, 3, 4, 5]
       // [1, 2, 3, 5, 6, 4]
-      const node = get(a[--aEnd], -1).nextSibling;
-      get(a[aStart++], -1).after(get(b[bStart++], 1));
+      const node = get(a[--aEnd], -0).nextSibling;
+      get(a[aStart++], -0).after(get(b[bStart++], 1));
       node.before(get(b[--bEnd], 1));
       // mark the future index as identical (yeah, it's dirty, but cheap 👍)
       // The main reason to do this, is that when a[aEnd] will be reached,

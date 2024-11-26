@@ -20,21 +20,20 @@ import parser from './parser.js';
 /** @typedef {import("./classes/key-value.js").TagResult} TagResult */
 /** @typedef {{2: (node: Element, once: boolean, { k, v }: AttributeDetails) => any, 8: (node: Comment, once: boolean, hint: HINT) => ((curr: Node[]) => void) | ((curr: Node) => void) | ((curr: string | null) => void), 1: (node: HTMLElement, once: boolean) => (curr: any | null) => void}} Update */
 
-// @ts-ignore
-class DirectWeakMap extends WeakMap {
-  /**
-   * @param {WeakKey} key
-   * @param {any} value
-   * @returns
-   */
-  set(key, value) {
-    super.set(key, value);
-    return value;
-  }
-}
-
-const dwm = new DirectWeakMap;
+const dwm = new WeakMap;
 const { diff } = Stack;
+
+/**
+ * @template V
+ * @param {WeakMap<WeakKey,V>} wm
+ * @param {WeakKey} key
+ * @param {V} value
+ * @returns
+ */
+const set = (wm, key, value) => {
+  wm.set(key, value);
+  return value;
+};
 
 /**
  * @param {Keyed | NonKeyed} details
@@ -63,7 +62,7 @@ export const render = (where, what) => {
   resolve = many;
   try {
     const { k: different, v: node } = diff(
-      dwm.get(where) || dwm.set(where, new Stack),
+      dwm.get(where) || set(dwm, where, new Stack),
       what()
     );
     if (different) {
@@ -87,7 +86,7 @@ export const render = (where, what) => {
  */
 export const tag = (SVG, attr, diff, text) => {
   const attributes = new Set(keys(attr));
-  const dwm = new DirectWeakMap;
+  const dwm = new WeakMap;
   const parse = parser(SVG);
   const update = {
     /**
@@ -112,7 +111,7 @@ export const tag = (SVG, attr, diff, text) => {
    * @returns {Node | TagResult}
    */
   return (t, ...v) => resolve(
-    dwm.get(t) || dwm.set(t, parse(t, v, attributes, update)),
+    dwm.get(t) || set(dwm, t, parse(t, v, attributes, update)),
     v,
   )
 };
