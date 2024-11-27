@@ -1,10 +1,10 @@
-import noop from '@webreflection/empty/arrow';
-
 import { ATTRIBUTE_NODE, DOCUMENT_FRAGMENT_NODE } from '../constants.js';
 
 import Fragment from '../classes/fragment.js';
 
 import { empty } from '../utils.js';
+
+const noop = () => {};
 
 /**
  * @param {Node} node

@@ -20,8 +20,41 @@
     src="https://esm.run/data-imports"
   ></script>
   <script type="module">
-    import Fragment from '../src/classes/fragment.js';
+    import { render, html } from '../src/html.js';
 
+    let i = 0;
+    const update = (a, b) => {
+      const first = i % 2 ? b : a;
+      const second = first === a ? b : a;
+      const children = () => html`
+        <hr />
+        ${[
+          first(first === a ? [html`a`, html`b`, html`c`] : [html`e`, html`d`]),
+          second(first === a ? [html`d`, html`e`] : [html`c`, html`b`, html`a`]),
+        ]}
+      `;
+      // document.body.replaceChildren(children());
+      render(document.body, children);
+      i++;
+      setTimeout(update, 2000, a, b);
+    };
+
+    update(
+      data => html`
+        <b>first</b>
+        <br />
+        ${data}
+        <hr />
+      `,
+      data => html`
+        <em>second</em>
+        <br />
+        ${data}
+        <hr />
+      `,
+    );
+
+    /*
     const ok = document.createTextNode('ok');
     const source = document.createDocumentFragment();
     source.append('fragment');
@@ -45,6 +78,7 @@
     console.log(f.firstChild.data, f.lastChild.data);
     console.log(f.childNodes);
     console.log(document.body.innerHTML.trim() || 'CLEAR');
+    */
   </script>
 </head>
 </html>

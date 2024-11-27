@@ -1,14 +1,17 @@
 import { COMMENT_NODE } from './constants.js';
 
+import { text } from './utils.js';
+
 /**
  * @param {DocumentFragment} fragment
  * @returns {DocumentFragment | HTMLElement | SVGElement | Node}
  */
 const getContent = fragment => {
-  const { firstChild: $, lastChild } = fragment;
-  // empty html`` fragments or html`${[]}` cases
-  return $ && $ === lastChild && $.nodeType !== COMMENT_NODE ?
-    fragment.removeChild($) : fragment;
+  const { firstChild, lastChild } = fragment;
+  return firstChild ?
+    (firstChild === lastChild ? fragment.removeChild(firstChild) : fragment) :
+    text('')
+  ;
 };
 
 let template = document.createElement('template');

@@ -15,7 +15,7 @@ import KeyValue from './classes/key-value.js';
 import Path from './classes/path.js';
 
 import { html, svg } from './create.js';
-import { attribute, empty, isArray, isObject } from './utils.js';
+import { attribute, empty, isArray, isObject, text } from './utils.js';
 
 import keyed from './handle/keyed.js';
 import nonKeyed from './handle/node.js';
@@ -52,8 +52,7 @@ export default SVG => {
    * @returns
    */
   return (template, values, attr, update) => {
-    const text = parser(template, prefix, SVG);
-    const node = content(text);
+    const node = content(parser(template, prefix, SVG));
     const length = template.length - 1;
     const paths = [], holes = [], comments = [];
     // TODO: the only thing I am not convinced is that
@@ -72,14 +71,12 @@ export default SVG => {
                 isObject(value) ? OBJECT : ANY
               )
             );
-            // const extra = isObject(value) ?
-            //   (value instanceof KeyValue ?
-            //     HOLE : (isArray(value) ? ARRAY : OBJECT)) :
-            //   ANY
-            // ;
             if (extra === ANY) comments.push(currentNode);
             // TODO: objects as holes is currently not supported
-            else if (extra !== OBJECT) holes.push(new KeyValue(i, extra));
+            else if (extra !== OBJECT) {
+              if (extra === ARRAY) currentNode.data = '[]';
+              holes.push(new KeyValue(i, extra));
+            }
             i = paths.push(new Path(COMMENT_NODE, map(currentNode), extra));
           }
           break;
@@ -118,7 +115,7 @@ export default SVG => {
     }
 
     for (const comment of comments)
-      comment.replaceWith(document.createTextNode(''));
+      comment.replaceWith(text(''));
 
     return (key < 0 ? nonKeyed : keyed)(
       node,

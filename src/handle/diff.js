@@ -32,13 +32,7 @@ const any = (node, prev) => curr => {
  * @returns {(curr:Node[]) => void}
  */
 const array = (node, prev) => curr => {
-  const { length } = curr;
-  if (length && prev !== empty)
-    prev = udomdiff(prev, curr, diff, node);
-  else {
-    prev = length ? curr : empty;
-    node.parentNode.replaceChildren(...prev, node);
-  }
+  prev = udomdiff(prev, curr, diff, node);
 };
 
 /**
@@ -73,7 +67,7 @@ const multi = (node, hint) => (
  */
 const oneOff = (node, hint) => value => {
   multi(node, hint)(value);
-  if (hint === ARRAY) node.remove();
+  if (hint === ARRAY) node.data = `[${value.length}]`;
 };
 
 /**

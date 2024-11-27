@@ -13,3 +13,9 @@ export const empty = [];
  * @returns
  */
 export const isObject = value => typeof value === 'object' && value !== null;
+
+/**
+ * @param {string} content
+ * @returns
+ */
+export const text = content => document.createTextNode(content);
