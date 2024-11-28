@@ -1,9 +1,8 @@
 import { ARRAY, HOLE } from '../constants.js';
 
-import Cache from './cache.js';
 import KeyValue from './key-value.js';
 
-import { empty } from '../utils.js';
+import { cache, empty, kv, valueOf } from '../utils.js';
 
 /**
  * @typedef {Object} ReplaceChildren
@@ -21,7 +20,7 @@ import { empty } from '../utils.js';
  * @param {TagResult} tagReturn
  * @returns
  */
-const diff = (stack, { k, v }) => new KeyValue(stack.as(k), stack.get(v));
+const diff = (stack, { k, v }) => kv(stack.as(k), stack.get(v));
 
 /**
  * @param {Stack[]} cache
@@ -44,14 +43,14 @@ const array = (cache, values) => {
  * @param {HoleDetails} details
  * @returns {CachedEntries}
  */
-const entries = ({ k, v }) => new Cache(k, v, v === HOLE ? new Stack : []);
+const entries = ({ k, v }) => cache(k, v, v === HOLE ? new Stack : []);
 
 export default class Stack {
   static diff = diff;
 
   /** @type {import("./key-value.js").CreateUpdate?} */
   create = null;
-  /** @type {null | (values: any[]) => Node} */
+  /** @type {((values: any[]) => Node)?} */
   update = null;
   /** @type {never[] | CachedEntries[]} */
   cache = empty;
@@ -81,7 +80,7 @@ export default class Stack {
         array(value, values[i]);
       else {
         const { k: different, v: node } = diff(value, values[i]);
-        values[i] = different ? node.valueOf() : node;
+        values[i] = different ? valueOf(node) : node;
       }
     }
     return this.update(values);

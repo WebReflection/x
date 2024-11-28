@@ -6,9 +6,8 @@ import udomdiff from '../domdiff.js';
 import Fragment from '../classes/fragment.js';
 const { diff } = Fragment;
 
-import { empty } from '../utils.js';
+import { empty, valueOf } from '../utils.js';
 
-const valueOf = node => node.valueOf();
 const remove = node => node.remove();
 
 /** @typedef {ANY | ARRAY | import("../constants.js").OBJECT} HINT */
@@ -26,7 +25,6 @@ const any = (node, prev) => curr => {
 };
 
 /**
- * 
  * @param {Comment} node
  * @param {Node[]} prev
  * @returns {(curr:Node[]) => void}
@@ -41,7 +39,7 @@ const array = (node, prev) => curr => {
  */
 const object = prev => curr => {
   if (prev !== curr) {
-    prev.replaceWith(curr.valueOf());
+    prev.replaceWith(valueOf(curr));
     prev = curr;
   }
 };

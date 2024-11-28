@@ -1,7 +1,6 @@
 // @ts-check
 
-import KeyValue from '../classes/key-value.js';
-
+import { kv } from '../utils.js';
 import create from './create.js';
 
 /**
@@ -11,7 +10,7 @@ import create from './create.js';
  * @param {import("../classes/key-value.js").HoleDetails[]} holes
  * @returns
  */
-export default (node, paths, update, holes) => new KeyValue(
+export default (node, paths, update, holes) => kv(
     create(node, paths, update),
     holes
 );

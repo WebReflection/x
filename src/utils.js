@@ -1,12 +1,33 @@
-// import empty from '@webreflection/empty/array';
+// @ts-check
+
+import Fragment from './classes/fragment.js';
+const valueOf = Fragment.value;
 
 const { isArray } = Array;
 const { keys } = Object;
-export { isArray, keys };
+export { isArray, keys, valueOf };
 
 export const attribute = Symbol();
 
+/** @type {never[]} */
 export const empty = [];
+
+/**
+ * @template K,V
+ * @param {K} k
+ * @param {V} v
+ * @returns
+ */
+export const kv = (k, v) => ({ k, v });
+
+/**
+ * @template T,E
+ * @param {T} type
+ * @param {number[] | never[]} path
+ * @param {E?} extra
+ * @returns
+ */
+export const path = (type, path, extra) => ({ type, path, extra });
 
 /**
  * @param {any} value

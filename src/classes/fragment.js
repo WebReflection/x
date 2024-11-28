@@ -1,5 +1,6 @@
-// @WTF-ts-check
+// @ts-check
 
+// @ts-ignore
 import native from 'custom-function/factory';
 
 // // cool for SSR but too much noise at runtime
@@ -23,7 +24,6 @@ let range;
 
 /** @extends {DocumentFragment} for real! */
 export default class Fragment extends native(DocumentFragment) {
-  // u/domdiff helper
   /**
    * @param {Node | Fragment} node
    * @param {1 | 0 | -0 | -1} op
@@ -37,6 +37,14 @@ export default class Fragment extends native(DocumentFragment) {
       node
   );
 
+  /**
+   * @param {Node | Fragment} node
+   * @returns {Node | Fragment}
+   */
+  static value = node => /** @type {Node | Fragment} */(
+    active ? node.valueOf() : node
+  );
+
   // privates
   /** @type {Node[]} */
   #childNodes;
@@ -47,7 +55,7 @@ export default class Fragment extends native(DocumentFragment) {
    * @returns {Node}
    */
   #remove(keepLast) {
-    const lastChild = this.#childNodes.at(-1);
+    const lastChild = /** @type {Node} */(this.#childNodes.at(-1));
     range.setStartBefore(this.#childNodes[0]);
     if (keepLast) range.setEndBefore(lastChild);
     else range.setEndAfter(lastChild);
@@ -56,7 +64,9 @@ export default class Fragment extends native(DocumentFragment) {
   }
 
   // public utilities and accessors
-  /** @param {DocumentFragment} fragment */
+  /**
+   * @param {DocumentFragment} fragment
+   */
   constructor(fragment) {
     // surround(fragment);
     // @ts-ignore
@@ -68,9 +78,11 @@ export default class Fragment extends native(DocumentFragment) {
 
   remove() { this.#remove(false); }
 
-  /** @param {Node} node */
+  /**
+   * @param {Node} node
+   */
   replaceWith(node) {
-    this.#remove(true).replaceWith(node);
+    /** @type {ChildNode} */(this.#remove(true)).replaceWith(node);
   }
 
   valueOf() {

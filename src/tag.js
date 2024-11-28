@@ -6,10 +6,10 @@ import {
   ELEMENT_NODE,
 } from './constants.js';
 
-import KeyValue from './classes/key-value.js';
-import Stack from './classes/stack.js';
+import Hole from './classes/hole.js';
 
-import { keys } from './utils.js';
+import { diff, stack } from './stack.js';
+import { keys, valueOf } from './utils.js';
 import parser from './parser.js';
 
 /** @typedef {import("./handle/diff.js").HINT} HINT */
@@ -21,7 +21,6 @@ import parser from './parser.js';
 /** @typedef {{2: (node: Element, once: boolean, { k, v }: AttributeDetails) => any, 8: (node: Comment, once: boolean, hint: HINT) => ((curr: Node[]) => void) | ((curr: Node) => void) | ((curr: string | null) => void), 1: (node: HTMLElement, once: boolean) => (curr: any | null) => void}} Update */
 
 const dwm = new WeakMap;
-const { diff } = Stack;
 
 /**
  * @template V
@@ -47,7 +46,7 @@ const once = ({ k: create }, values) => create(true)(values);
  * @param {any[]} values
  * @returns
  */
-const many = (details, values) => new KeyValue(details, values);
+const many = (details, values) => new Hole(details, values);
 
 let resolve = once;
 
@@ -62,13 +61,11 @@ export const render = (where, what) => {
   resolve = many;
   try {
     const { k: different, v: node } = diff(
-      dwm.get(where) || set(dwm, where, new Stack),
+      dwm.get(where) || set(dwm, where, stack()),
       what()
     );
     if (different) {
-      where.replaceChildren(
-        /** @type {Node} */ (node.valueOf())
-      );
+      where.replaceChildren(valueOf(node));
     }
   }
   finally {

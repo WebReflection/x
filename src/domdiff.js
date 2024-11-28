@@ -1,4 +1,13 @@
+// @ts-check
+
 const map = new Map;
+
+/**
+ * @param {ChildNode[]} a
+ * @param {ChildNode[]} b
+ * @param {<T>(node:T, op:-1 | -0 | 0 | 1) => T} get
+ * @param {ChildNode} before
+ */
 export default (a, b, get, before) => {
   const bLength = b.length;
   let aEnd = a.length;
@@ -13,11 +22,12 @@ export default (a, b, get, before) => {
       // need to be added are not at the end, and in such case
       // the node to `insertBefore`, if the index is more than 0
       // must be retrieved, otherwise it's gonna be the first item.
-      const node = bEnd < bLength ?
+      const node = /** @type {ChildNode} */(bEnd < bLength ?
         (bStart ?
           (get(b[bStart - 1], -0).nextSibling) :
           get(b[bEnd], 0)) :
-        before;
+        before
+      );
       const prev = [];
       while (bStart < bEnd) prev.push(get(b[bStart++], 1));
       node.before(...prev);
@@ -53,7 +63,7 @@ export default (a, b, get, before) => {
       // or asymmetric too
       // [1, 2, 3, 4, 5]
       // [1, 2, 3, 5, 6, 4]
-      const node = get(a[--aEnd], -0).nextSibling;
+      const node = /** @type {ChildNode} */(get(a[--aEnd], -0).nextSibling);
       get(a[aStart++], -0).after(get(b[bStart++], 1));
       node.before(get(b[--bEnd], 1));
       // mark the future index as identical (yeah, it's dirty, but cheap 👍)

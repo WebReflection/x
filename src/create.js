@@ -1,4 +1,4 @@
-import { COMMENT_NODE } from './constants.js';
+// @ts-check
 
 import { text } from './utils.js';
 
@@ -21,7 +21,8 @@ export const html = text => {
   template.innerHTML = text;
   const { content } = template;
   const node = getContent(content);
-  if (node === content) template = template.cloneNode(false);
+  if (node === content)
+    template = /** @type {HTMLTemplateElement} */(template.cloneNode(false));
   return node;
 };
 

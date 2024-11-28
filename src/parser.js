@@ -11,14 +11,14 @@ import {
 
 import parser from '@webreflection/uparser';
 
+import Hole from './classes/hole.js';
 import KeyValue from './classes/key-value.js';
-import Path from './classes/path.js';
 
 import { html, svg } from './create.js';
-import { attribute, empty, isArray, isObject, text } from './utils.js';
+import { attribute, empty, isArray, isObject, kv, path, text } from './utils.js';
 
 import keyed from './handle/keyed.js';
-import nonKeyed from './handle/node.js';
+import nonKeyed from './handle/non-keyed.js';
 
 const { indexOf } = empty;
 
@@ -27,13 +27,13 @@ const { indexOf } = empty;
  * @returns {number[]}
  */
 const map = node => {
-  const path = [];
+  const p = [];
   let parentNode;
   while ((parentNode = node.parentNode)) {
-    path.push(indexOf.call(parentNode.childNodes, node));
+    p.push(indexOf.call(parentNode.childNodes, node));
     node = parentNode;
   }
-  return path.length ? path : empty;
+  return p.length ? p : empty;
 };
 
 const prefix = 'isµ';
@@ -66,7 +66,7 @@ export default SVG => {
           // holes
           if (currentNode.data === (prefix + i)) {
             const value = values[i];
-            const extra = value instanceof KeyValue ? HOLE : (
+            const extra = value instanceof Hole ? HOLE : (
               isArray(value) ? ARRAY : (
                 isObject(value) ? OBJECT : ANY
               )
@@ -75,14 +75,14 @@ export default SVG => {
             // TODO: objects as holes is currently not supported
             else if (extra !== OBJECT) {
               if (extra === ARRAY) currentNode.data = '[]';
-              holes.push(new KeyValue(i, extra));
+              holes.push(kv(i, extra));
             }
-            i = paths.push(new Path(COMMENT_NODE, map(currentNode), extra));
+            i = paths.push(path(COMMENT_NODE, map(currentNode), extra));
           }
           break;
         }
         case ELEMENT_NODE: {
-          let path, search, name;
+          let p, search, name;
           // attributes
           while ((name = currentNode.getAttribute((search = prefix + i)))) {
             let extra = null;
@@ -90,14 +90,14 @@ export default SVG => {
             else {
               const c = name[0];
               const s = attr.has(c);
-              extra = new KeyValue(
+              extra = kv(
                 s ? c : (attr.has(name) ? name : attribute),
                 s ? name.slice(1) : name
               );
             }
-            path ??= map(currentNode);
+            p ??= map(currentNode);
             currentNode.removeAttribute(search);
-            i = paths.push(new Path(ATTRIBUTE_NODE, path, extra));
+            i = paths.push(path(ATTRIBUTE_NODE, p, extra));
           }
           // text only elements: plaintext, script, style, textarea, title, xmp
           if (
@@ -105,8 +105,7 @@ export default SVG => {
             TEXT_ELEMENTS.test(currentNode.localName) &&
             currentNode.textContent.trim() === `<!--${search}-->`
           ) {
-            path ??= map(currentNode);
-            i = paths.push(new Path(ELEMENT_NODE, path, null));
+            i = paths.push(path(ELEMENT_NODE, p ?? map(currentNode), null));
           }
           break;
         }

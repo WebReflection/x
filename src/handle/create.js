@@ -1,3 +1,5 @@
+// @no-ts-check
+
 import { ATTRIBUTE_NODE, DOCUMENT_FRAGMENT_NODE } from '../constants.js';
 
 import Fragment from '../classes/fragment.js';
@@ -20,9 +22,13 @@ export default (node, paths, update) => {
    */
   return once => {
     const { length } = paths;
+    /** @type {function[] | never[]} */
     const updates = length ? [] : empty;
     let dom = document.importNode(node, true);
-    for (let prevPath = empty, node = dom, i = 0; i < length; i++) {
+    for (let
+      /** @type {number[] | never[]} */ prevPath = empty, node = dom, i = 0;
+      i < length; i++
+    ) {
       const { type, path, extra } = paths[i];
       // speed up multiple attributes per same node + text nodes w/ attributes
       if (prevPath !== path) {
@@ -31,9 +37,9 @@ export default (node, paths, update) => {
         for (let { length: i } = path; i--; node = node.childNodes[path[i]]);
       }
       updates[i] = type === ATTRIBUTE_NODE && !extra ?
-        noop : update[type](node, once, extra);
+        noop : update[type](/** @type {Element & Comment & HTMLElement} */(node), once, extra);
     }
-    if (isFragment) dom = new Fragment(dom);
+    if (isFragment) dom = new Fragment(/** @type {DocumentFragment} */(dom));
     return values => {
       for (let i = 0; i < length; i++) updates[i](values[i]);
       return dom;

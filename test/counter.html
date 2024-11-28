@@ -24,13 +24,16 @@
 
     class Component {
       #node = null;
-      #view = () => this.view();
       view() {
         throw new Error('unknown view()');
       }
       render() {
-        render(this, this.#view);
-        return this.#node;
+        let node;
+        render(this, () => {
+          node = this.view();
+          return node;
+        });
+        return node;
       }
       replaceChildren(node) {
         this.#node = node;
@@ -65,7 +68,21 @@
       }
     }
 
-    class DivCounter extends Counter {
+    function DivCounter(i) {
+      return () => html`
+        <div>
+          <button @click=${() => {
+            i--;
+          }}>-</button>
+          ${i}
+          <button @click=${() => {
+            i++;
+          }}>+</button>
+        </div>
+      `;
+    }
+
+    class asd extends Counter {
       view = () => html`
         <div>
           <button @click=${this.decrement}>-</button>
@@ -87,12 +104,9 @@
 
     (globalThis.render = () => {
       console.time('counters');
-      // render(document.body, () => html`
-      //   ${new FragmentCounter(0)}
-      //   ${new DivCounter(1)}
-      //   ${new DivCounter(2)}
-      //   ${new DivCounter(3)}
-      // `);
+      debugger;
+      render(document.body, DivCounter(1));
+      return;
       render(document.body, () => html`
         <div>${[
           new FragmentCounter(0).valueOf(),

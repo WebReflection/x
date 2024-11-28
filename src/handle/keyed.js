@@ -1,7 +1,6 @@
 // @ts-check
 
-import KeyValue from '../classes/key-value.js';
-
+import { kv } from '../utils.js';
 import create from './create.js';
 
 const fr = new FinalizationRegistry(
@@ -19,7 +18,7 @@ const fr = new FinalizationRegistry(
 export default (node, paths, update, holes, key) => {
   const map = new Map;
   const lazy = create(node, paths, update);
-  return new KeyValue(
+  return kv(
     /**
      * @param {boolean} once
      * @returns {(values:any[]) => Node}
