@@ -8,14 +8,15 @@ const fr = new FinalizationRegistry(
 );
 
 /**
+ * @template E,H
  * @param {Node} node
- * @param {import("../classes/path.js").AnyPath[]} paths
+ * @param {import("../parser.js").Path<import("../parser.js").Type,E>[] | never[]} paths
  * @param {import("../tag.js").Update} update
- * @param {import("../classes/key-value.js").HoleDetails[]} holes
- * @param {number} key
+ * @param {H} holes
+ * @param {number} i
  * @returns
  */
-export default (node, paths, update, holes, key) => {
+export default (node, paths, update, holes, i) => {
   const map = new Map;
   const lazy = create(node, paths, update);
   return kv(
@@ -24,7 +25,7 @@ export default (node, paths, update, holes, key) => {
      * @returns {(values:any[]) => Node}
      */
     once => function held(values) {
-      const value = values[key];
+      const value = values[i];
       let update = map.get(value);
       if (!update) {
         update = lazy(once);

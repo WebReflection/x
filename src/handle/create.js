@@ -1,4 +1,4 @@
-// @no-ts-check
+// @ts-check
 
 import { ATTRIBUTE_NODE, DOCUMENT_FRAGMENT_NODE } from '../constants.js';
 
@@ -10,7 +10,7 @@ const noop = () => {};
 
 /**
  * @param {Node} node
- * @param {import("../classes/path.js").AnyPath[]} paths
+ * @param {import("../parser.js").Path<import("../parser.js").Type,any?>[] | never[]} paths
  * @param {import("../tag.js").Update} update
  * @returns
  */
@@ -22,15 +22,13 @@ export default (node, paths, update) => {
    */
   return once => {
     const { length } = paths;
-    /** @type {function[] | never[]} */
-    const updates = length ? [] : empty;
+    const updates = /** @type {function[] | never[]} */(length ? [] : empty);
     let dom = document.importNode(node, true);
     for (let
       /** @type {number[] | never[]} */ prevPath = empty, node = dom, i = 0;
       i < length; i++
     ) {
       const { type, path, extra } = paths[i];
-      // speed up multiple attributes per same node + text nodes w/ attributes
       if (prevPath !== path) {
         prevPath = path;
         node = dom;

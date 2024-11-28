@@ -14,10 +14,11 @@ import parser from './parser.js';
 
 /** @typedef {import("./handle/diff.js").HINT} HINT */
 /** @typedef {import("./classes/fragment.js").default} Fragment */
-/** @typedef {import("./classes/key-value.js").Keyed} Keyed */
-/** @typedef {import("./classes/key-value.js").AttributeDetails} AttributeDetails */
-/** @typedef {import("./classes/key-value.js").NonKeyed} NonKeyed */
-/** @typedef {import("./classes/key-value.js").TagResult} TagResult */
+/** @typedef {import("./gone/key-value.js").Keyed} Keyed */
+/** @typedef {import("./gone/key-value.js").AttributeDetails} AttributeDetails */
+/** @typedef {import("./gone/key-value.js").NonKeyed} NonKeyed */
+/** @typedef {import("./gone/key-value.js").TagResult} TagResult */
+
 /** @typedef {{2: (node: Element, once: boolean, { k, v }: AttributeDetails) => any, 8: (node: Comment, once: boolean, hint: HINT) => ((curr: Node[]) => void) | ((curr: Node) => void) | ((curr: string | null) => void), 1: (node: HTMLElement, once: boolean) => (curr: any | null) => void}} Update */
 
 const dwm = new WeakMap;

@@ -1,3 +1,5 @@
+// @no-ts-check
+
 import {
   ANY,
   ARRAY,
@@ -12,19 +14,31 @@ import {
 import parser from '@webreflection/uparser';
 
 import Hole from './classes/hole.js';
-import KeyValue from './classes/key-value.js';
 
 import { html, svg } from './create.js';
-import { attribute, empty, isArray, isObject, kv, path, text } from './utils.js';
+import { attribute, empty, isArray, isObject, kv, text } from './utils.js';
 
 import keyed from './handle/keyed.js';
 import nonKeyed from './handle/non-keyed.js';
+
+/**
+ * @typedef {typeof ATTRIBUTE_NODE | typeof COMMENT_NODE | typeof ELEMENT_NODE} Type
+ */
+
+/**
+ * @template {Type} T
+ * @template E
+ * @typedef {Object} Path
+ * @prop {T} type
+ * @prop {number[] | never[]} path
+ * @prop {E?} extra
+ */
 
 const { indexOf } = empty;
 
 /**
  * @param {Node} node
- * @returns {number[]}
+ * @returns {number[] | never[]}
  */
 const map = node => {
   const p = [];
@@ -35,6 +49,16 @@ const map = node => {
   }
   return p.length ? p : empty;
 };
+
+/**
+ * @template T
+ * @template E
+ * @param {T} type
+ * @param {number[] | never[]} path
+ * @param {E?} extra
+ * @returns {Path<T,E>}
+ */
+const path = (type, path, extra) => ({ type, path, extra });
 
 const prefix = 'isµ';
 

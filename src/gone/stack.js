@@ -9,7 +9,7 @@ import { cache, empty, kv, valueOf } from '../utils.js';
  * @prop {(node:Node) => void} replaceChildren
  */
 
-/** @typedef {import("./cache.js").CachedEntries} CachedEntries */
+/** @typedef {import("../gone/cache.js").CachedEntries} CachedEntries */
 /** @typedef {import("./key-value.js").HoleDetails} HoleDetails */
 /** @typedef {import("./key-value.js").Keyed} Keyed */
 /** @typedef {import("./key-value.js").NonKeyed} NonKeyed */

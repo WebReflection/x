@@ -4,10 +4,11 @@ import { kv } from '../utils.js';
 import create from './create.js';
 
 /**
+ * @template E,H
  * @param {Node} node
- * @param {import("../classes/path.js").AnyPath[]} paths
+ * @param {import("../parser.js").Path<import("../parser.js").Type,E>[] | never[]} paths
  * @param {import("../tag.js").Update} update
- * @param {import("../classes/key-value.js").HoleDetails[]} holes
+ * @param {H} holes
  * @returns
  */
 export default (node, paths, update, holes) => kv(

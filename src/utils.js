@@ -21,15 +21,6 @@ export const empty = [];
 export const kv = (k, v) => ({ k, v });
 
 /**
- * @template T,E
- * @param {T} type
- * @param {number[] | never[]} path
- * @param {E?} extra
- * @returns
- */
-export const path = (type, path, extra) => ({ type, path, extra });
-
-/**
  * @param {any} value
  * @returns
  */
