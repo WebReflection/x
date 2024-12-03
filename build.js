@@ -20,4 +20,28 @@ export default [
       file: './src/pony.js',
     }
   },
+  {
+    plugins,
+    input: './src/custom.js',
+    output: {
+      esModule: true,
+      file: './custom.js',
+    }
+  },
+  {
+    plugins,
+    input: './src/signals/preact.js',
+    output: {
+      esModule: true,
+      file: './preactive.js',
+    }
+  },
+  {
+    plugins,
+    input: './src/reactive.js',
+    output: {
+      esModule: true,
+      file: './reactive.js',
+    }
+  },
 ];

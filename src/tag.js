@@ -21,7 +21,7 @@ import parser from './parser.js';
 
 /** @typedef {{2: (node: Element, once: boolean, { k, v }: AttributeDetails) => any, 8: (node: Comment, once: boolean, hint: HINT) => ((curr: Node[]) => void) | ((curr: Node) => void) | ((curr: string | null) => void), 1: (node: HTMLElement, once: boolean) => (curr: any | null) => void}} Update */
 
-const dwm = new WeakMap;
+const wm = new WeakMap;
 
 /**
  * @template V
@@ -62,7 +62,7 @@ export const render = (where, what) => {
   resolve = many;
   try {
     const { k: different, v: node } = diff(
-      dwm.get(where) || set(dwm, where, stack()),
+      wm.get(where) || set(wm, where, stack()),
       what()
     );
     if (different) {
@@ -84,7 +84,7 @@ export const render = (where, what) => {
  */
 export const tag = (SVG, attr, diff, text) => {
   const attributes = new Set(keys(attr));
-  const dwm = new WeakMap;
+  const wm = new WeakMap;
   const parse = parser(SVG);
   const update = {
     /**
@@ -109,7 +109,7 @@ export const tag = (SVG, attr, diff, text) => {
    * @returns {Node | TagResult}
    */
   return (t, ...v) => resolve(
-    dwm.get(t) || set(dwm, t, parse(t, v, attributes, update)),
+    wm.get(t) || set(wm, t, parse(t, v, attributes, update)),
     v,
   )
 };

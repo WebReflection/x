@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script
+    data-imports="
+      custom-function/factory
+      domconstants/constants
+      domconstants/re
+      create-contextual-content
+      @webreflection/empty/array
+      @webreflection/empty/arrow
+      @webreflection/uparser
+      @preact/signals-core
+      udomdiff
+      uhtml
+      gc-hook
+      gc-hook/track
+    "
+    src="https://esm.run/data-imports"
+  ></script>
+  <script type="module">
+    import { render, html, signal } from '../src/signals/preact.js';
+
+    function Counter(value = 0) {
+      const count = signal(value);
+      return () => html`
+        <button @click=${() => { count.value-- }}>
+          decrement
+        </button>
+        <p>Clicks: ${ count.value }</p>
+        <button @click=${() => { count.value++ }}>
+          increment
+        </button>
+      `;
+    }
+
+    render(document.body, Counter(0));
+  </script>
+</head>
+</html>
