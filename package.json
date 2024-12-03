@@ -1,6 +1,6 @@
 {
   "name": "@webreflection/x",
-  "version": "0.2.21",
+  "version": "0.2.22",
   "type": "module",
   "unpkg": "./x.js",
   "main": "./src/html.js",
@@ -71,12 +71,9 @@
   "description": "Currently the possible future of uhtml",
   "dependencies": {
     "@preact/signals-core": "^1.8.0",
-    "@webreflection/empty": "^1.0.0",
     "@webreflection/uparser": "^0.4.0",
     "custom-function": "^2.0.0",
-    "domconstants": "^1.1.6",
-    "gc-hook": "^0.4.1",
-    "udomdiff": "^1.1.0"
+    "domconstants": "^1.1.6"
   },
   "devDependencies": {
     "@rollup/plugin-node-resolve": "^15.3.0",

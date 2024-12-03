@@ -65,9 +65,8 @@ export const render = (where, what) => {
       wm.get(where) || set(wm, where, stack()),
       what()
     );
-    if (different) {
+    if (different)
       where.replaceChildren(valueOf(node));
-    }
   }
   finally {
     resolve = resolver;

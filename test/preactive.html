@@ -23,20 +23,33 @@
   <script type="module">
     import { render, html, signal } from '../src/signals/preact.js';
 
-    function Counter(value = 0) {
-      const count = signal(value);
-      return () => html`
-        <button @click=${() => { count.value-- }}>
-          decrement
-        </button>
-        <p>Clicks: ${ count.value }</p>
-        <button @click=${() => { count.value++ }}>
-          increment
-        </button>
+    // @see https://preactjs.com/guide/v10/signals/#introduction
+    const count = signal(0);
+
+    function Counter() {
+      return html`
+        <div>
+          <p>Count: ${count.value}</p>
+          <button @click=${() => { count.value++ }}>click me</button>
+        </div>
       `;
     }
 
-    render(document.body, Counter(0));
+    let div = document.body.appendChild(
+      document.createElement('div')
+    );
+    render(div, () => html`
+      <div>
+        <h3>Counter Demo</h3>
+        ${Counter()}
+        <hr />
+      </div>
+    `);
+
+    setTimeout(() => {
+      render(div, () => html`<div>gone</div>`);
+      div = null;
+    }, 5000);
   </script>
 </head>
 </html>

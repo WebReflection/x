@@ -17,7 +17,9 @@ import {
  */
 export default effect => {
   const fr = new FinalizationRegistry(dispose => { dispose() });
+
   const wm = new WeakMap;
+
   /**
    * @param {ParentNode} where
    * @param {() => TagResult} what
